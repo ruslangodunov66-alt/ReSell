@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>RESELL — Твой хаб. Твои правила.</title>
+    <style>
+        /* --- ЦВЕТОВАЯ ПАЛИТРА И ПЕРЕМЕННЫЕ --- */
+        :root {
+            --bg-main: #0B0C0E;       /* Глубокий чёрный фон */
+            --bg-card: #13151A;       /* Фон карточек и меню */
+            --bg-input: #1C1E24;      /* Фон полей ввода и второстепенных элементов */
+            --accent: #CFFF24;        /* Кислотно-зелёный фирменный неон */
+            --text-main: #FFFFFF;     /* Основной белый текст */
+            --text-muted: #8E8E93;    /* Приглушённый серый */
+            --accent-muted: rgba(207, 255, 36, 0.1);
+        }
+
+        /* --- БАЗОВЫЕ НАСТРОЙКИ --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #000000;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Оболочка под формат смартфона / PWA / Telegram Mini App */
+        .app-container {
+            width: 100%;
+            max-width: 450px;
+            height: 100vh;
+            background-color: var(--bg-main);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+        }
+
+        @media (min-width: 450px) {
+            .app-container {
+                height: 850px;
+                border-radius: 32px;
+                border: 4px solid #24262E;
+            }
+        }
+
+        /* --- ВЕРХНЯЯ ПАНЕЛЬ (HEADER) --- */
+        .header {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--bg-main);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 10;
+        }
+
+        /* Логотип RESELL через SVG */
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo-svg {
+            height: 28px;
+            fill: var(--text-main);
+        }
+
+        .profile-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-card);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .profile-badge .balance {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        /* --- КОНТЕНТНЫЕ СТРАНИЦЫ (ROUTER) --- */
+        .content-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 100px; /* Чтобы контент не перекрывался нижним меню */
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- СТИЛИ КОМПОНЕНТОВ И ИНТЕРФЕЙСА --- */
+        h2 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+
+        .search-bar {
+            width: 100%;
+            background-color: var(--bg-input);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px 16px;
+            border-radius: 14px;
+            color: var(--text-main);
+            font-size: 15px;
+            margin-bottom: 20px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-bar:focus {
+            border-color: var(--accent);
+        }
+
+        /* Категории товаров */
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .category-card {
+            background-color: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            padding: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .category-card:active {
+            transform: scale(0.95);
+            border-color: var(--accent);
+        }
+
+        .category-icon {
+            font-size: 22px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .category-title {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Карточка товара/сделки */
+        .info-card {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .tag {
+            background-color: var(--accent-muted);
+            color: var(--accent);
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Главная кнопка действия */
+        .btn-main {
+            width: 100%;
+            background-color: var(--accent);
+            color: #000000;
+            border: none;
+            padding: 16px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-main:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+
+        /* --- НИЖНЕЕ МЕНЮ НАВИГАЦИИ (BOTTOM NAVIGATION) --- */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(19, 21, 26, 0.95);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 10px 24px 10px; /* Увеличенный нижний отступ под "челку" смартфонов */
+            z-index: 10;
+        }
+
+        @media (min-width: 450px) {
+            .bottom-nav {
+                padding-bottom: 12px;
+                border-bottom-left-radius: 28px;
+                border-bottom-right-radius: 28px;
+            }
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 10px;
+            font-weight: 500;
+            gap: 4px;
+            cursor: pointer;
+            flex: 1;
+            transition: color 0.2s;
+        }
+
+        .nav-item svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+            transition: transform 0.2s;
+        }
+
+        /* Состояние активной вкладки */
+        .nav-item.active {
+            color: var(--accent);
+        }
+
+        .nav-item.active svg {
+            transform: translateY(-2px);
+        }
+
+        /* Кнопка по центру с плюсом (+ ДОБАВИТЬ ТОВАР) */
+        .nav-item.add-btn-center {
+            position: relative;
+            top: -5px;
+        }
+
+        .nav-item.add-btn-center .icon-wrapper {
+            background-color: var(--bg-input);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .nav-item.add-btn-center.active .icon-wrapper {
+            background-color: var(--accent-muted);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- ВЕРХНИЙ БАР -->
+        <header class="header">
+            <div class="logo-container">
+                <!-- Кастомный SVG Стилизованного Логотипа RESELL с Короной над буквой E -->
+                <svg class="logo-svg" viewBox="0 0 160 40" xmlns="http://www.w3.org/2000/svg">
+                    <text x="5" y="32" font-family="Impact, sans-serif" font-size="34" font-weight="900" font-style="italic" letter-spacing="1">RESELL</text>
+                    <!-- Векторная корона над первой буквой E -->
+                    <path d="M 46 2 L 51 8 L 57 2 L 63 8 L 68 2 L 66 12 L 48 12 Z" fill="#CFFF24"/>
+                </svg>
+            </div>
+            <div class="profile-badge">
+                <span class="balance">28 450 ₽</span>
+            </div>
+        </header>
+
+        <!-- ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК -->
+        <main class="content-wrapper">
+
+            <!-- СТРАНИЦА: ГЛАВНАЯ -->
+            <section id="home" class="page active">
+                <input type="text" class="search-bar" placeholder="Поиск кроссовок, одежды, техники...">
+                
+                <h2>Категории</h2>
+                <div class="categories-grid">
+                    <div class="category-card">
+                        <span class="category-icon">👟</span>
+                        <span class="category-title">Кроссовки</span>
+                    </div>
+                    <div class="category-card">
+                        <span class="category-icon">👕</span>
+                        <span class="category-title">Одежда</span>
+                    </div>
+                    <div class="category-card">
+                        <span class="category-icon">📱</span>
+                        <span class="category-title">Техника</span>
+                    </div>
+                </div>
+
+                <h2>Рекомендуем для тебя 🔥</h2>
+                <div class="info-card">
+                    <div class="card-header">
+                        <span style="font-weight: 600;">Nike Dunk Low Panda</span>
+                        <span class="tag">8 000 ₽</span>
+                    </div>
+                    <p style="color: var(--text-muted); font-size: 14px;">Состояние: 9/10 • Размер: 42</p>
+                </div>
+            </section>
+
+            <!-- СТРАНИЦА: ЧАТЫ -->
+            <section id="chats" class="page">
+                <h2>Сообщения</h2>
+                <div class="info-card" style="cursor: pointer;">
+                    <div class="card-header">
+                        <span style="font-weight: 600;">@sneaker_kent</span>
+                        <span style="color: var(--text-muted); font-size: 12px;">14:22</span>
+                    </div>
+                    <p style="color: var(--accent); font-size: 14px;">По поводу обмена на iPhone 11...</p>
+                </div>
+            </section>
+
+            <!-- СТРАНИЦА: ДОБАВИТЬ ТОВАР -->
+            <section id="add-product" class="page">
+                <h2>Новое объявление</h2>
+                <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 14px;">Выставляй на классическую продажу или запускай мена-кросс обмен прямо сейчас.</p>
+                <button class="btn-main">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Опубликовать товар
+                </button>
+            </section>
+
+            <!-- СТРАНИЦА: СДЕЛКИ -->
+            <section id="deals" class="page">
+                <h2>Безопасные сделки</h2>
+                <div class="info-card">
+                    <div class="card-header">
+                        <span style="font-weight: 600;">Сделка #48291</span>
+                        <span class="tag" style="background-color: #24b6ff20; color: #24b6ff;">ХОЛД</span>
+                    </div>
+                    <p style="font-size: 14px; margin-bottom: 8px;">Товар: Nike Dunk Low Panda</p>
+                    <p style="color: var(--text-muted); font-size: 12px;">Статус: Ожидается подтверждение получения товара покупателем.</p>
+                </div>
+            </section>
+
+            <!-- СТРАНИЦА: ПРОФИЛЬ -->
+            <section id="profile" class="page">
+                <h2>Мой профиль</h2>
+                <div class="info-card" style="text-align: center; padding: 24px 16px;">
+                    <div style="width: 70px; height: 70px; background-color: var(--bg-input); border-radius: 50%; margin: 0 auto 12px auto; display: flex; align-items: center; justify-content: center; border: 2px solid var(--accent); font-size: 28px;">🥷</div>
+                    <h3 style="margin-bottom: 4px;">reseller_kent</h3>
+                    <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 12px;">ID: 12345678</p>
+                    <div style="display: flex; justify-content: center; gap: 20px; margin-top: 16px;">
+                        <div>
+                            <div style="font-size: 18px; font-weight: 700; color: var(--accent);">5.0 ⭐</div>
+                            <div style="color: var(--text-muted); font-size: 11px;">Рейтинг</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 18px; font-weight: 700;">57</div>
+                            <div style="color: var(--text-muted); font-size: 11px;">Сделки</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- НИЖНЯЯ НАВИГАЦИОННАЯ ПАНЕЛЬ -->
+        <nav class="bottom-nav">
+            <!-- Главная -->
+            <div class="nav-item active" onclick="switchPage('home', this)">
+                <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                <span>Главная</span>
+            </div>
+            <!-- Чаты -->
+            <div class="nav-item" onclick="switchPage('chats', this)">
+                <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+                <span>Чаты</span>
+            </div>
+            <!-- Добавить Товар (Центральная кнопка) -->
+            <div class="nav-item add-btn-center" onclick="switchPage('add-product', this)">
+                <div class="icon-wrapper">
+                    <svg viewBox="0 0 24 24" style="width: 22px; height: 22px;"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                </div>
+            </div>
+            <!-- Сделки -->
+            <div class="nav-item" onclick="switchPage('deals', this)">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                <span>Сделки</span>
+            </div>
+            <!-- Профиль -->
+            <div class="nav-item" onclick="switchPage('profile', this)">
+                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                <span>Профиль</span>
+            </div>
+        </nav>
+
+    </div>
+
+    <!-- МИНИМАЛЬНЫЙ СКРИПТ ДЛЯ ПЕРЕКЛЮЧЕНИЯ СТРАНИЦ -->
+    <script>
+        function switchPage(pageId, element) {
+            // Скрываем все страницы
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => page.classList.remove('active'));
+
+            // Снимаем активный класс со всех кнопок меню
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+
+            // Показываем целевую страницу
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+            }
+
+            // Делаем кликнутую иконку активной
+            element.classList.add('active');
+        }
+    </script>
+</body>
+</html>
