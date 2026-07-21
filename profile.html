@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="black-green">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>RESELL App</title>
+    <!-- Подключение Telegram Web App API -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* ================= ДИЗАЙН СИСТЕМА ================= */
+        /* ТЕМА 1: Чёрно-зелёная (по умолчанию) */
+        :root {
+            --bg-base: #060709;        
+            --bg-surface: #101216;     
+            --bg-glass: rgba(16, 18, 22, 0.7); 
+            --accent: #CFFF24;         
+            --accent-glow: rgba(207, 255, 36, 0.3);
+            --accent-text: #000000;
+            --text-primary: #FFFFFF;
+            --text-secondary: #8A8D93;
+            --border-light: rgba(255, 255, 255, 0.06);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 10px;
+            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        /* ТЕМА 2: Бело-синяя */
+        :root[data-theme="white-blue"] {
+            --bg-base: #F0F4F8;        
+            --bg-surface: #FFFFFF;     
+            --bg-glass: rgba(255, 255, 255, 0.8); 
+            --accent: #0066FF;         
+            --accent-glow: rgba(0, 102, 255, 0.3);
+            --accent-text: #FFFFFF;
+            --text-primary: #1A1A1A;
+            --text-secondary: #666666;
+            --border-light: rgba(0, 0, 0, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Контейнер приложения */
+        .app {
+            width: 100%;
+            max-width: 420px;
+            height: 100vh;
+            background: radial-gradient(circle at 50% 0%, var(--bg-surface) 0%, var(--bg-base) 60%);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 421px) {
+            .app { height: 850px; border-radius: 40px; border: 8px solid var(--bg-surface); box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
+        }
+
+        /* ================= HEADER ================= */
+        .header {
+            padding: 20px 20px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo-text { font-size: 26px; font-weight: 900; font-style: italic; letter-spacing: 0.5px; }
+        .logo-accent { color: var(--accent); }
+
+        .balance-badge {
+            background: rgba(128, 128, 128, 0.1);
+            border: 1px solid var(--border-light);
+            padding: 8px 14px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--accent);
+            box-shadow: 0 0 15px var(--accent-glow);
+            transition: transform 0.2s;
+        }
+        .balance-badge:active { transform: scale(0.95); }
+
+        .settings-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            margin-left: 10px;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .settings-btn:active { opacity: 0.5; }
+
+        /* ================= SCROLL AREA & PAGES ================= */
+        .viewport {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0 20px 120px;
+            scroll-behavior: smooth;
+        }
+        .viewport::-webkit-scrollbar { display: none; }
+
+        .page {
+            display: none;
+            opacity: 0;
+            transform: translateY(15px) scale(0.98);
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .page.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        /* ================= UI КОМПОНЕНТЫ ================= */
+        .search-container { position: relative; margin-bottom: 20px; }
+        .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); opacity: 0.5; color: var(--text-primary); }
+        .search-input {
+            width: 100%;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            padding: 14px 14px 14px 44px;
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .search-input:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+
+        .section-title { font-size: 20px; font-weight: 700; margin: 24px 0 16px; display: flex; align-items: center; justify-content: space-between; }
+        .section-title span { color: var(--text-secondary); font-size: 14px; font-weight: 500; cursor: pointer; }
+
+        .categories-scroll {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            margin-right: -20px;
+            padding-right: 20px;
+        }
+        .categories-scroll::-webkit-scrollbar { display: none; }
+        .category-pill {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .category-pill.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+
+        .feed-grid { display: grid; gap: 16px; }
+        
+        .listing-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 14px;
+            display: flex;
+            gap: 14px;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideUpFade 0.5s forwards cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        @keyframes slideUpFade { to { opacity: 1; transform: translateY(0); } }
+
+        .listing-img {
+            width: 90px;
+            height: 90px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-base); 
+            border: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            flex-shrink: 0;
+        }
+
+        .listing-info { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .listing-title { font-size: 16px; font-weight: 600; line-height: 1.3; }
+        .listing-price { font-size: 18px; font-weight: 800; color: var(--accent); margin-top: 4px; }
+        
+        .listing-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+        
+        .seller-info { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+        .seller-avatar { width: 20px; height: 20px; border-radius: 50%; background: var(--border-light); }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-exchange { background: rgba(187, 134, 252, 0.15); color: #bb86fc; }
+        .badge-sale { background: var(--border-light); color: var(--text-primary); }
+        .badge-hold { background: rgba(36, 182, 255, 0.15); color: #24b6ff; }
+
+        .btn-primary {
+            width: 100%;
+            background: var(--accent);
+            color: var(--accent-text);
+            border: none;
+            padding: 18px;
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 20px var(--accent-glow);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary:active { transform: scale(0.97); box-shadow: 0 5px 10px var(--accent-glow); }
+        
+        .btn-secondary {
+            width: 100%;
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border-light);
+            padding: 16px;
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            font-weight: 700;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn-secondary:active { background: var(--bg-base); }
+
+        /* ================= PROFILE СТИЛИ ================= */
+        .profile-header-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .profile-avatar-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+        
+        .profile-avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-base) 100%);
+            border: 2px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+        
+        .verified-badge {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: var(--accent);
+            color: var(--accent-text);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--bg-base);
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .profile-details h2 {
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+        
+        .profile-rating {
+            color: var(--text-secondary);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 16px 10px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .profile-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .profile-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-light);
+            margin-bottom: 20px;
+        }
+        
+        .profile-tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s;
+        }
+        
+        .profile-tab.active {
+            color: var(--text-primary);
+        }
+        
+        .profile-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 2px 2px 0 0;
+            box-shadow: 0 -2px 10px var(--accent-glow);
+        }
+
+        /* ================= МОДАЛЬНОЕ ОКНО НАСТРОЕК ================= */
+        .modal-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+
+        .modal-content {
+            background: var(--bg-surface);
+            width: 100%;
+            border-radius: 24px 24px 0 0;
+            padding: 24px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+
+        /* ================= FLOATING BOTTOM NAV ================= */
+        .nav-dock {
+            position: absolute;
+            bottom: 25px;
+            left: 20px;
+            right: 20px;
+            background: var(--bg-glass);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--border-light);
+            border-radius: 30px;
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 16px;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            color: var(--text-secondary);
+            border-radius: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .nav-item svg { width: 24px; height: 24px; fill: currentColor; transition: all 0.3s; }
+        
+        .nav-item.active { color: var(--accent); }
+        .nav-item.active svg { transform: translateY(-2px); filter: drop-shadow(0 0 8px var(--accent-glow)); }
+
+        .nav-fab {
+            width: 56px;
+            height: 56px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-text); 
+            transform: translateY(-15px);
+            box-shadow: 0 8px 24px var(--accent-glow);
+            border: 4px solid var(--bg-base);
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        .nav-fab:active { transform: translateY(-12px) scale(0.95); }
+        .nav-fab svg { fill: currentColor; width: 28px; height: 28px; }
+
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <!-- Стеклянный градиент на фоне -->
+    <div style="position: absolute; top: -100px; left: -100px; width: 300px; height: 300px; background: var(--accent); filter: blur(150px); opacity: 0.05; pointer-events: none; z-index: 0;"></div>
+
+    <!-- HEADER -->
+    <header class="header">
+        <div class="logo-text">RES<span class="logo-accent">E</span>LL</div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="balance-badge" id="headerBalance">28 450 ₽</div>
+            <button class="settings-btn" id="openSettings">⚙️</button>
+        </div>
+    </header>
+
+    <!-- ОСНОВНАЯ ОБЛАСТЬ СКРОЛЛА -->
+    <main class="viewport">
+
+        <!-- СТРАНИЦА: ЛЕНТА (HOME) -->
+        <section id="home" class="page active">
+            <div class="search-container">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" class="search-input" placeholder="Поиск на районе...">
+            </div>
+
+            <!-- Фильтры -->
+            <div class="categories-scroll">
+                <div class="category-pill active" data-category="all">🔥 Все</div>
+                <div class="category-pill" data-category="shoes">👟 Кроссовки</div>
+                <div class="category-pill" data-category="tech">🎮 Техника</div>
+                <div class="category-pill" data-category="clothes">👕 Шмот</div>
+            </div>
+
+            <h2 class="section-title">Свежее <span>Показать все</span></h2>
+            
+            <div class="feed-grid" id="feed-container">
+                <!-- Карточки будут сгенерированы через JS -->
+            </div>
+        </section>
+
+        <!-- СТРАНИЦА: СДЕЛКИ -->
+        <section id="deals" class="page">
+            <h2 class="section-title" style="margin-top: 0;">Безопасная сделка</h2>
+            
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 20px; position: relative; overflow: hidden;">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--accent);"></div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <span style="font-weight: 700; font-size: 18px;">Эскроу активен</span>
+                    <span class="badge badge-hold" style="font-size: 12px;">HOLD</span>
+                </div>
+                
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <div style="width: 60px; height: 60px; background: rgba(128,128,128,0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 1px solid var(--border-light);">👟</div>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 4px;">Nike Dunk Low Panda</div>
+                        <div style="color: var(--accent); font-weight: 700;">8 000 ₽</div>
+                    </div>
+                </div>
+
+                <div style="border-left: 2px solid var(--accent); margin-left: 10px; padding-left: 15px; display: flex; flex-direction: column; gap: 15px;">
+                    <div style="position: relative;">
+                        <div style="position: absolute; left: -20px; top: 2px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent);"></div>
+                        <div style="font-size: 14px; color: var(--text-primary);">Оплата покупателем</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">14:22</div>
+                    </div>
+                    <div style="position: relative;">
+                        <div style="position: absolute; left: -20px; top: 2px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent);"></div>
+                        <div style="font-size: 14px; color: var(--text-primary); font-weight: 600;">Ожидается товар</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Продавец должен отправить посылку</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn-secondary">Открыть спор ⚖️</button>
+        </section>
+
+        <!-- СТРАНИЦА: СОЗДАТЬ -->
+        <section id="create" class="page">
+            <div style="text-align: center; padding: 40px 0;">
+                <div style="font-size: 60px; margin-bottom: 20px;">📸</div>
+                <h2 style="margin-bottom: 10px;">Добавь свой лут</h2>
+                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 30px; line-height: 1.5;">Продай за кэш или предложи обмен через Мена-Кросс. Никакой комиссии за размещение.</p>
+                <button class="btn-primary">Загрузить фото</button>
+            </div>
+        </section>
+
+        <!-- СТРАНИЦА: ПРОФИЛЬ -->
+        <section id="profile" class="page">
+            <!-- Шапка профиля -->
+            <div class="profile-header-card">
+                <div class="profile-avatar-container">
+                    <div class="profile-avatar-img" id="userAvatar">😎</div>
+                    <div class="verified-badge">✓</div>
+                </div>
+                <div class="profile-details">
+                    <h2 id="userName">@resell_king</h2>
+                    <div class="profile-rating">
+                        <span>⭐ 4.9</span> 
+                        <span>•</span>
+                        <span style="text-decoration: underline; cursor: pointer;">124 отзыва</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Статистика -->
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-value" id="statSales">42</div>
+                    <div class="stat-label">Продажи</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="statBuys">18</div>
+                    <div class="stat-label">Покупки</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" style="color: var(--accent);" id="statTurnover">215k</div>
+                    <div class="stat-label">Оборот ₽</div>
+                </div>
+            </div>
+
+            <!-- Кнопки действий -->
+            <div class="profile-actions">
+                <button class="btn-primary" style="padding: 14px; font-size: 14px;" id="withdrawBtn">Вывод средств</button>
+                <button class="btn-secondary" style="padding: 14px; font-size: 14px;" id="editProfileBtn">Редактировать</button>
+            </div>
+
+            <!-- Вкладки профиля -->
+            <div class="profile-tabs" id="profileTabs">
+                <div class="profile-tab active" data-tab="active-listings">Активные (2)</div>
+                <div class="profile-tab" data-tab="history">История</div>
+            </div>
+
+            <!-- Контент вкладок профиля -->
+            <div class="feed-grid" id="profile-content">
+                <!-- Сюда JS загрузит лоты юзера (заглушки) -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ПАРЯЩИЙ DOCK НАВИГАЦИИ -->
+    <nav class="nav-dock">
+        <!-- Главная -->
+        <div class="nav-item active" onclick="switchPage('home', this)">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        </div>
+        <!-- Сделки -->
+        <div class="nav-item" onclick="switchPage('deals', this)">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        </div>
+        <!-- Добавить (FAB) -->
+        <div class="nav-fab" onclick="switchPage('create', this)">
+            <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </div>
+        <!-- Сообщения / Уведомления -->
+        <div class="nav-item" onclick="switchPage('deals', this)"> <!-- Пока кидает на сделки -->
+            <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+        </div>
+        <!-- ПРОФИЛЬ -->
+        <div class="nav-item" onclick="switchPage('profile', this)">
+            <!-- Иконка юзера -->
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </div>
+    </nav>
+
+    <!-- МОДАЛЬНОЕ ОКНО НАСТРОЕК -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="font-size: 20px;">Настройки</h2>
+                <button id="closeSettings" style="background: none; border: none; color: var(--text-primary); font-size: 28px; cursor: pointer; padding: 0 10px;">&times;</button>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 10px; color: var(--text-secondary); font-size: 14px;">Тема приложения</label>
+                <select id="themeDropdown" style="width: 100%; padding: 14px; background: var(--bg-base); color: var(--text-primary); border: 1px solid var(--border-light); border-radius: 12px; font-size: 16px; outline: none;">
+                    <option value="black-green">Чёрно-зелёная (Неон)</option>
+                    <option value="white-blue">Бело-синяя (Светлая)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ЛОГИКА ПРИЛОЖЕНИЯ -->
+<script>
+    // 1. ИНИЦИАЛИЗАЦИЯ TELEGRAM WEB APP
+    let tgUser = null;
+    try {
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        // Пытаемся получить данные пользователя из Telegram (когда будет на сервере)
+        tgUser = tg.initDataUnsafe?.user;
+    } catch (e) { console.log("Работа вне Telegram"); }
+
+    // Подставляем реальное имя, если открыто в ТГ
+    if (tgUser && tgUser.username) {
+        document.getElementById('userName').innerText = '@' + tgUser.username;
+    }
+
+    // 2. ДАННЫЕ (Главная лента)
+    const listingsData = [
+        { category: "shoes", title: "Nike Dunk Low Panda", price: "5 500 ₽", type: "sale", badge: "ПРОДАЖА", img: "👟", user: "sneakerhead", rating: "4.9" },
+        { category: "tech", title: "PlayStation 4 Pro 1TB", price: "12 000 ₽", type: "exchange", badge: "ОБМЕН", img: "🎮", user: "Пацан Б", rating: "5.0" },
+        { category: "tech", title: "iPhone 11 128GB", price: "15 000 ₽", type: "hold", badge: "ХОЛД", img: "📱", user: "apple_boy", rating: "4.8" },
+        { category: "shoes", title: "Jordan 4 Retro", price: "18 500 ₽", type: "sale", badge: "ПРОДАЖА", img: "🏀", user: "resell_king", rating: "5.0" },
+        { category: "tech", title: "AirPods Pro 2", price: "8 000 ₽", type: "exchange", badge: "ОБМЕН", img: "🎧", user: "music_fan", rating: "4.5" },
+        { category: "clothes", title: "Travis Scott T-Shirt", price: "4 000 ₽", type: "sale", badge: "ПРОДАЖА", img: "👕", user: "hype_beast", rating: "4.7" }
+    ];
+
+    // ДАННЫЕ (Личный профиль - Мои лоты)
+    const profileListingsData = [
+        { title: "Jordan 4 Retro (Мои)", price: "18 500 ₽", type: "sale", badge: "АКТИВНО", img: "🏀", user: "resell_king", rating: "5.0" },
+        { title: "Casio G-Shock", price: "6 000 ₽", type: "exchange", badge: "АКТИВНО", img: "⌚", user: "resell_king", rating: "5.0" }
+    ];
+
+    // 3. ФУНКЦИЯ РЕНДЕРА КАРТОЧЕК
+    function createCardHTML(item, delayIndex) {
+        let badgeClass = "badge-sale";
+        if(item.type === "exchange") badgeClass = "badge-exchange";
+        if(item.type === "hold") badgeClass = "badge-hold";
+        const delay = delayIndex * 0.1; 
+
+        return `
+            <div class="listing-card" style="animation-delay: ${delay}s">
+                <div class="listing-img">${item.img}</div>
+                <div class="listing-info">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div class="listing-title">${item.title}</div>
+                        </div>
+                        <div class="listing-price">${item.price}</div>
+                    </div>
+                    <div class="listing-meta">
+                        <div class="seller-info">
+                            <div class="seller-avatar"></div>
+                            ${item.user} • ⭐${item.rating}
+                        </div>
+                        <div class="badge ${badgeClass}">${item.badge}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Рендер Главной ленты
+    const feedContainer = document.getElementById('feed-container');
+    function renderFeed(filterCategory = 'all') {
+        feedContainer.innerHTML = ''; 
+        const filteredData = listingsData.filter(item => filterCategory === 'all' || item.category === filterCategory);
+        
+        if (filteredData.length === 0) {
+            feedContainer.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-secondary);">Ничего не найдено</div>`;
+            return;
+        }
+
+        filteredData.forEach((item, index) => {
+            feedContainer.insertAdjacentHTML('beforeend', createCardHTML(item, index));
+        });
+    }
+
+    // Рендер Ленты в Профиле
+    const profileContentContainer = document.getElementById('profile-content');
+    function renderProfileFeed() {
+        profileContentContainer.innerHTML = '';
+        profileListingsData.forEach((item, index) => {
+            profileContentContainer.insertAdjacentHTML('beforeend', createCardHTML(item, index));
+        });
+    }
+
+    // Первоначальный рендер
+    renderFeed('all');
+    renderProfileFeed();
+
+    // 4. ИНТЕРАКТИВНОСТЬ: Фильтры на главной
+    document.querySelectorAll('.category-pill').forEach(pill => {
+        pill.addEventListener('click', function() {
+            document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+            this.classList.add('active');
+            renderFeed(this.getAttribute('data-category'));
+        });
+    });
+
+    // ИНТЕРАКТИВНОСТЬ: Табы в профиле
+    document.querySelectorAll('.profile-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            
+            const tabName = this.getAttribute('data-tab');
+            if(tabName === 'history') {
+                profileContentContainer.innerHTML = `<div style="text-align:center; padding: 40px 20px; color: var(--text-secondary);">История сделок пока пуста 📭</div>`;
+            } else {
+                renderProfileFeed();
+            }
+        });
+    });
+
+    // 5. РОУТИНГ МЕЖДУ СТРАНИЦАМИ
+    function switchPage(pageId, element) {
+        document.querySelectorAll('.page').forEach(page => {
+            page.classList.remove('active');
+        });
+
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+
+        setTimeout(() => {
+            document.getElementById(pageId).classList.add('active');
+        }, 50);
+
+        if (!element.classList.contains('nav-fab')) {
+            element.classList.add('active');
+        }
+    }
+
+    // 6. ЛОГИКА ТЕМ И НАСТРОЕК
+    const htmlElement = document.documentElement;
+    const themeDropdown = document.getElementById('themeDropdown');
+    const settingsModal = document.getElementById('settingsModal');
+
+    function applyTheme(themeName) {
+        htmlElement.setAttribute('data-theme', themeName);
+        localStorage.setItem('resellAppTheme', themeName);
+        themeDropdown.value = themeName;
+    }
+
+    const savedTheme = localStorage.getItem('resellAppTheme') || 'black-green';
+    applyTheme(savedTheme);
+
+    themeDropdown.addEventListener('change', (e) => applyTheme(e.target.value));
+
+    document.getElementById('openSettings').addEventListener('click', () => {
+        settingsModal.classList.add('active');
+    });
+
+    document.getElementById('closeSettings').addEventListener('click', () => {
+        settingsModal.classList.remove('active');
+    });
+
+    settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) {
+            settingsModal.classList.remove('active');
+        }
+    });
+</script>
+</body>
+</html>
