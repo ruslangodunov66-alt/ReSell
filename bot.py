@@ -3947,7 +3947,18 @@ async def casino_new_menu(callback: CallbackQuery):
         return
     player = await run_sync_db(get_player_data, player_id)
     balance = player.get("casino_balance", 0) if player else 0
-    webapp_url = f"https://ruslangodunov66-alt.github.io/resellcrash/casino.html?userId={user_id}&balance={balance}"
+    
+    # Лог для проверки (можно посмотреть в консоли)
+    print(f"🔍 Casino balance for user {user_id}: {balance}")
+    
+    # Добавляем случайный параметр, чтобы избежать кеширования
+    webapp_url = (
+        f"https://ruslangodunov66-alt.github.io/resellcrash/casino.html"
+        f"?userId={user_id}"
+        f"&balance={balance}"
+        f"&_={int(time.time())}"   # <-- случайное число, меняется каждый раз
+    )
+    
     web_app_button = KeyboardButton(text="🎰 ОТКРЫТЬ КАЗИНО", web_app=WebAppInfo(url=webapp_url))
     reply_keyboard = ReplyKeyboardMarkup(keyboard=[[web_app_button]], resize_keyboard=True)
     await callback.message.answer(
@@ -8240,6 +8251,114 @@ async def handle_options(request):
         'Access-Control-Allow-Headers': 'Content-Type',
     })
 
+# ==================== HTTP ОБРАБОТЧИКИ ДЛЯ КОШЕЛЬКА ====================
+async def handle_deposit(request):
+    """Пополнение казино-баланса с основного баланса (HTTP POST)"""
+    try:
+        data = await request.json()
+        tg_id = data.get('userId')
+        amount = int(data.get('amount', 0))
+        if not tg_id or amount <= 0:
+            return web.json_response(
+                {"success": False, "error": "Invalid data"},
+                headers={'Access-Control-Allow-Origin': '*'}
+            )
+
+        player_id = await get_player_id_by_tg(int(tg_id))
+        if not player_id:
+            return web.json_response(
+                {"success": False, "error": "Player not found"},
+                headers={'Access-Control-Allow-Origin': '*'}
+            )
+
+        player = get_player_data(player_id)
+        if not player:
+            return web.json_response(
+                {"success": False, "error": "Player not found"},
+                headers={'Access-Control-Allow-Origin': '*'}
+            )
+
+        main_balance = player.get("balance", 0)
+        if main_balance < amount:
+            return web.json_response({
+                "success": False,
+                "error": f"Недостаточно средств на основном балансе! Доступно: {main_balance}₽"
+            }, headers={'Access-Control-Allow-Origin': '*'})
+
+        new_main = main_balance - amount
+        new_casino = player.get("casino_balance", 0) + amount
+        update_player_data(player_id, {
+            "balance": new_main,
+            "casino_balance": new_casino
+        })
+
+        return web.json_response({
+            "success": True,
+            "new_casino_balance": new_casino,
+            "new_main_balance": new_main,
+            "message": f"Пополнение на {amount}₽ выполнено!"
+        }, headers={'Access-Control-Allow-Origin': '*'})
+    except Exception as e:
+        print(f"❌ Ошибка в /deposit: {e}")
+        return web.json_response(
+            {"success": False, "error": str(e)},
+            headers={'Access-Control-Allow-Origin': '*'}
+        )
+
+
+async def handle_withdraw(request):
+    """Вывод с казино-баланса на основной баланс (HTTP POST)"""
+    try:
+        data = await request.json()
+        tg_id = data.get('userId')
+        amount = int(data.get('amount', 0))
+        if not tg_id or amount <= 0:
+            return web.json_response(
+                {"success": False, "error": "Invalid data"},
+                headers={'Access-Control-Allow-Origin': '*'}
+            )
+
+        player_id = await get_player_id_by_tg(int(tg_id))
+        if not player_id:
+            return web.json_response(
+                {"success": False, "error": "Player not found"},
+                headers={'Access-Control-Allow-Origin': '*'}
+            )
+
+        player = get_player_data(player_id)
+        if not player:
+            return web.json_response(
+                {"success": False, "error": "Player not found"},
+                headers={'Access-Control-Allow-Origin': '*'}
+            )
+
+        casino_balance = player.get("casino_balance", 0)
+        if casino_balance < amount:
+            return web.json_response({
+                "success": False,
+                "error": f"Недостаточно средств в казино! Доступно: {casino_balance}₽"
+            }, headers={'Access-Control-Allow-Origin': '*'})
+
+        new_casino = casino_balance - amount
+        new_main = player.get("balance", 0) + amount
+        update_player_data(player_id, {
+            "balance": new_main,
+            "casino_balance": new_casino
+        })
+
+        return web.json_response({
+            "success": True,
+            "new_casino_balance": new_casino,
+            "new_main_balance": new_main,
+            "message": f"Вывод {amount}₽ выполнен!"
+        }, headers={'Access-Control-Allow-Origin': '*'})
+    except Exception as e:
+        print(f"❌ Ошибка в /withdraw: {e}")
+        return web.json_response(
+            {"success": False, "error": str(e)},
+            headers={'Access-Control-Allow-Origin': '*'}
+        )
+
 async def handle_profile(request):
     tg_id = request.match_info.get('tg_id')
     if not tg_id:
@@ -8436,6 +8555,10 @@ async def start_web_server_async():
         app.router.add_options('/referral/generate', handle_options)
         app.router.add_options('/referral/users', handle_options)
         app.router.add_options('/referral/income', handle_options)
+        app.router.add_post('/deposit', handle_deposit)
+        app.router.add_post('/withdraw', handle_withdraw)
+        app.router.add_options('/deposit', handle_options)
+        app.router.add_options('/withdraw', handle_options)
         runner = web.AppRunner(app)
         await runner.setup()
         site = web.TCPSite(runner, '0.0.0.0', 8080)
