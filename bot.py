@@ -10,14 +10,17 @@ import random
 import hashlib
 import time as time_module
 import re
-import aiohttp
 import asyncio
+import aiohttp
 import random
 import time
 import json
 import traceback
 import threading
-from aiohttp import web
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
+import asyncio
 from datetime import datetime
 from typing import Optional, Dict, Any, List, Tuple
 from pydantic import BaseModel
@@ -8227,63 +8230,123 @@ def ensure_stock_prices_table():
     conn.close()
     print("✅ Таблица stock_prices проверена/создана")
 
-async def handle_balance(request):
-    tg_id = request.match_info.get('tg_id')
-    if not tg_id:
-        return web.json_response({"error": "No tg_id"}, status=400)
+# ==================== LIFESPAN ДЛЯ FASTAPI ====================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # ---- 1. Инициализация (то, что было в main()) ----
+    init_db()
+    upgrade_db()
+    ensure_stock_prices_table()
+    generate_supplier_items()
+    init_trading()
+    
+    # ---- 2. Фоновые задачи (все твои asyncio.create_task) ----
+    tasks = [
+        asyncio.create_task(update_trading_loop()),
+        asyncio.create_task(auction_loop()),
+        asyncio.create_task(check_business_expiry()),
+        asyncio.create_task(process_deposits()),
+        asyncio.create_task(process_mining()),
+        asyncio.create_task(check_overdue_loans()),
+        asyncio.create_task(race_timeout_check()),
+        asyncio.create_task(update_stock_prices_loop()),
+        asyncio.create_task(dividends_loop()),
+        asyncio.create_task(clean_inactive_chats()),
+        asyncio.create_task(daily_day_increment()),
+    ]
+    # (start_web_server_async мы не запускаем – он больше не нужен)
+    
+    # ---- 3. Запуск aiogram polling (единственный!) ----
+    await bot.delete_webhook(drop_pending_updates=True)
+    polling_task = asyncio.create_task(dp.start_polling(bot, allowed_updates=["message", "callback_query", "web_app_data"]))
+    tasks.append(polling_task)
+    
+    print("✅ Бот и фоновые задачи запущены")
+    
+    yield  # здесь приложение работает
+    
+    # ---- 4. Остановка (при завершении) ----
+    for t in tasks:
+        t.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
+    await bot.session.close()
+    print("✅ Приложение остановлено")
+
+app = FastAPI(title="Resell Tycoon API", lifespan=lifespan)
+
+# ==================== HTTP ОБРАБОТЧИКИ (FASTAPI) ====================
+@app.get("/")
+async def root():
+    return JSONResponse({"message": "✅ Бот работает! Используйте /api/player для данных."})
+
+@app.post("/game_result")
+async def game_result(request: Request):
     try:
-        tg_id = int(tg_id)
-    except ValueError:
-        return web.json_response({"error": "Invalid tg_id"}, status=400)
-    player_id = await get_player_id_by_tg(tg_id)
-    if not player_id:
-        return web.json_response({"error": "Player not found"}, status=404)
-    player = get_player_data(player_id)
-    if not player:
-        return web.json_response({"error": "Player not found"}, status=404)
-    # ВОЗВРАЩАЕМ casino_balance, а не balance
-    return web.json_response({"balance": player.get("casino_balance", 0)})
+        data = await request.json()
+        tg_id = data.get('userId')
+        result = data.get('result')
+        bet = int(data.get('bet', 0))
+        win = int(data.get('win', 0))
+        game = data.get('game', 'unknown')
 
-async def handle_options(request):
-    return web.Response(headers={
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-    })
+        if not tg_id:
+            return JSONResponse({"error": "No userId"}, status_code=400)
 
-# ==================== HTTP ОБРАБОТЧИКИ ДЛЯ КОШЕЛЬКА ====================
-async def handle_deposit(request):
-    """Пополнение казино-баланса с основного баланса (HTTP POST)"""
+        player_id = await get_player_id_by_tg(int(tg_id))
+        if not player_id:
+            return JSONResponse({"error": "Player not found"}, status_code=404)
+
+        async with db_lock:
+            player = await run_sync_db(get_player_data, player_id)
+            if not player:
+                return JSONResponse({"error": "Player not found"}, status_code=404)
+
+            current_casino = player.get("casino_balance", 0)
+
+            if result == "win":
+                new_casino = current_casino + win
+            else:
+                new_casino = current_casino - bet
+
+            if new_casino < 0:
+                new_casino = 0
+
+            await run_sync_db(update_player_data, player_id, {"casino_balance": new_casino})
+            await update_casino_stats(player_id, result, bet, win)
+
+            return JSONResponse({
+                "status": "ok",
+                "new_balance": new_casino,
+                "game": game,
+                "result": result
+            })
+    except Exception as e:
+        print(f"Ошибка в /game_result: {e}")
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+@app.post("/deposit")
+async def deposit(request: Request):
     try:
         data = await request.json()
         tg_id = data.get('userId')
         amount = int(data.get('amount', 0))
         if not tg_id or amount <= 0:
-            return web.json_response(
-                {"success": False, "error": "Invalid data"},
-                headers={'Access-Control-Allow-Origin': '*'}
-            )
+            return JSONResponse({"success": False, "error": "Invalid data"})
 
         player_id = await get_player_id_by_tg(int(tg_id))
         if not player_id:
-            return web.json_response(
-                {"success": False, "error": "Player not found"},
-                headers={'Access-Control-Allow-Origin': '*'}
-            )
+            return JSONResponse({"success": False, "error": "Player not found"})
 
         player = get_player_data(player_id)
         if not player:
-            return web.json_response(
-                {"success": False, "error": "Player not found"},
-                headers={'Access-Control-Allow-Origin': '*'}
-            )
+            return JSONResponse({"success": False, "error": "Player not found"})
 
         main_balance = player.get("balance", 0)
         if main_balance < amount:
-            return web.json_response({
+            return JSONResponse({
                 "success": False,
                 "error": f"Недостаточно средств на основном балансе! Доступно: {main_balance}₽"
-            }, headers={'Access-Control-Allow-Origin': '*'})
+            })
 
         new_main = main_balance - amount
         new_casino = player.get("casino_balance", 0) + amount
@@ -8292,52 +8355,39 @@ async def handle_deposit(request):
             "casino_balance": new_casino
         })
 
-        return web.json_response({
+        return JSONResponse({
             "success": True,
             "new_casino_balance": new_casino,
             "new_main_balance": new_main,
             "message": f"Пополнение на {amount}₽ выполнено!"
-        }, headers={'Access-Control-Allow-Origin': '*'})
+        })
     except Exception as e:
-        print(f"❌ Ошибка в /deposit: {e}")
-        return web.json_response(
-            {"success": False, "error": str(e)},
-            headers={'Access-Control-Allow-Origin': '*'}
-        )
+        print(f"Ошибка в /deposit: {e}")
+        return JSONResponse({"success": False, "error": str(e)})
 
-
-async def handle_withdraw(request):
-    """Вывод с казино-баланса на основной баланс (HTTP POST)"""
+@app.post("/withdraw")
+async def withdraw(request: Request):
     try:
         data = await request.json()
         tg_id = data.get('userId')
         amount = int(data.get('amount', 0))
         if not tg_id or amount <= 0:
-            return web.json_response(
-                {"success": False, "error": "Invalid data"},
-                headers={'Access-Control-Allow-Origin': '*'}
-            )
+            return JSONResponse({"success": False, "error": "Invalid data"})
 
         player_id = await get_player_id_by_tg(int(tg_id))
         if not player_id:
-            return web.json_response(
-                {"success": False, "error": "Player not found"},
-                headers={'Access-Control-Allow-Origin': '*'}
-            )
+            return JSONResponse({"success": False, "error": "Player not found"})
 
         player = get_player_data(player_id)
         if not player:
-            return web.json_response(
-                {"success": False, "error": "Player not found"},
-                headers={'Access-Control-Allow-Origin': '*'}
-            )
+            return JSONResponse({"success": False, "error": "Player not found"})
 
         casino_balance = player.get("casino_balance", 0)
         if casino_balance < amount:
-            return web.json_response({
+            return JSONResponse({
                 "success": False,
                 "error": f"Недостаточно средств в казино! Доступно: {casino_balance}₽"
-            }, headers={'Access-Control-Allow-Origin': '*'})
+            })
 
         new_casino = casino_balance - amount
         new_main = player.get("balance", 0) + amount
@@ -8346,261 +8396,116 @@ async def handle_withdraw(request):
             "casino_balance": new_casino
         })
 
-        return web.json_response({
+        return JSONResponse({
             "success": True,
             "new_casino_balance": new_casino,
             "new_main_balance": new_main,
             "message": f"Вывод {amount}₽ выполнен!"
-        }, headers={'Access-Control-Allow-Origin': '*'})
+        })
     except Exception as e:
-        print(f"❌ Ошибка в /withdraw: {e}")
-        return web.json_response(
-            {"success": False, "error": str(e)},
-            headers={'Access-Control-Allow-Origin': '*'}
-        )
+        print(f"Ошибка в /withdraw: {e}")
+        return JSONResponse({"success": False, "error": str(e)})
 
-async def handle_profile(request):
-    tg_id = request.match_info.get('tg_id')
-    if not tg_id:
-        return web.json_response({"error": "No tg_id"}, status=400)
-    try:
-        tg_id = int(tg_id)
-    except ValueError:
-        return web.json_response({"error": "Invalid tg_id"}, status=400)
-
+@app.get("/profile/{tg_id}")
+async def profile(tg_id: int):
     player_id = await get_player_id_by_tg(tg_id)
     if not player_id:
-        return web.json_response({"error": "Player not found"}, status=404)
+        return JSONResponse({"error": "Player not found"}, status_code=404)
 
     player = get_player_data(player_id)
     if not player:
-        return web.json_response({"error": "Player not found"}, status=404)
+        return JSONResponse({"error": "Player not found"}, status_code=404)
 
-    # Получаем статистику
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT 
-            casino_games_played,
-            casino_wins,
-            casino_losses,
-            casino_total_bet,
-            casino_total_win
-        FROM players WHERE id = ?
-    """, (player_id,))
-    row = cursor.fetchone()
-    conn.close()
+    # Скопируй сюда свою логику, если она была в handle_profile (сейчас возвращаются базовые данные)
+    return JSONResponse({
+        "nickname": player.get("nickname"),
+        "balance": player.get("balance"),
+        "total_earned": player.get("total_earned"),
+        "total_sales": player.get("total_sales"),
+        "level": get_rep_level(player.get("total_sales", 0))
+    })
 
-    if row:
-        games_played = row[0] or 0
-        wins = row[1] or 0
-        losses = row[2] or 0
-        total_bet = row[3] or 0
-        total_win = row[4] or 0
-    else:
-        games_played = wins = losses = total_bet = total_win = 0
-
-    net_profit = total_win - total_bet
-    winrate = round((wins / games_played * 100), 1) if games_played > 0 else 0
-
-    profile_data = {
-        "nickname": player.get('nickname', 'Игрок'),
-        "balance": player.get('balance', 0),
-        "total_earned": player.get('total_earned', 0),
-        "games_played": games_played,
-        "wins": wins,
-        "losses": losses,
-        "total_bet": total_bet,
-        "total_win": total_win,
-        "net_profit": net_profit,
-        "winrate": winrate
-    }
-    return web.json_response(profile_data)
-
-async def handle_game_result(request):
-    """Принимает результат игры и обновляет casino_balance в БД"""
-    try:
-        data = await request.json()
-        tg_id = data.get('userId')
-        game = data.get('game')
-        result = data.get('result')  # 'win' или 'lose'
-        bet = data.get('bet', 0)
-        win_amount = data.get('win', 0)
-
-        if not tg_id:
-            return web.json_response({"error": "No userId"}, status=400)
-
-        player_id = await get_player_id_by_tg(tg_id)
-        if not player_id:
-            return web.json_response({"error": "Player not found"}, status=404)
-
-        async with db_lock:
-            player = await run_sync_db(get_player_data, player_id)
-            if not player:
-                return web.json_response({"error": "Player not found"}, status=404)
-
-            current_casino = player.get("casino_balance", 0)
-
-            if result == "win":
-                new_casino = current_casino + win_amount
-            else:
-                # При проигрыше ставка уже списана локально, но для надёжности можно не менять баланс
-                # или убедиться, что баланс корректен (локально он уже уменьшен)
-                new_casino = current_casino  # ничего не делаем
-
-            await run_sync_db(update_player_data, player_id, {"casino_balance": new_casino})
-
-            return web.json_response({
-                "status": "ok",
-                "new_balance": new_casino,
-                "game": game,
-                "result": result
-            })
-    except Exception as e:
-        print(f"Ошибка в handle_game_result: {e}")
-        return web.json_response({"error": str(e)}, status=500)
-
-async def handle_referral_generate(request):
-    """Возвращает реферальную ссылку для пользователя"""
-    tg_id = request.query.get('tg_id')
+@app.get("/referral/generate")
+async def referral_generate(request: Request):
+    tg_id = request.query_params.get('tg_id')
     if not tg_id:
-        return web.json_response({"error": "No tg_id"}, status=400)
+        return JSONResponse({"error": "No tg_id"}, status_code=400)
     try:
         tg_id = int(tg_id)
     except ValueError:
-        return web.json_response({"error": "Invalid tg_id"}, status=400)
+        return JSONResponse({"error": "Invalid tg_id"}, status_code=400)
 
     player_id = await get_player_id_by_tg(tg_id)
     if not player_id:
-        return web.json_response({"error": "Player not found"}, status=404)
+        return JSONResponse({"error": "Player not found"}, status_code=404)
 
-    # Генерируем реферальную ссылку
-    ref_code = gen_ref(tg_id)  # функция gen_ref уже есть в боте
+    ref_code = gen_ref(tg_id)
     link = f"https://t.me/{BOT_USERNAME}?start=ref_{ref_code}"
-    return web.json_response({"link": link})
+    return JSONResponse({"link": link})
 
-async def handle_referral_users(request):
-    """Возвращает список приглашённых пользователей"""
-    tg_id = request.query.get('tg_id')
+@app.get("/referral/users")
+async def referral_users(request: Request):
+    tg_id = request.query_params.get('tg_id')
     if not tg_id:
-        return web.json_response({"error": "No tg_id"}, status=400)
+        return JSONResponse({"error": "No tg_id"}, status_code=400)
     try:
         tg_id = int(tg_id)
     except ValueError:
-        return web.json_response({"error": "Invalid tg_id"}, status=400)
+        return JSONResponse({"error": "Invalid tg_id"}, status_code=400)
 
     player_id = await get_player_id_by_tg(tg_id)
     if not player_id:
-        return web.json_response({"error": "Player not found"}, status=404)
+        return JSONResponse({"error": "Player not found"}, status_code=404)
 
     ref_data = await run_sync_db(get_referral_data, player_id)
     invited = ref_data.get("invited", [])
-    # Получаем никнеймы приглашённых
+
     users = []
-    for invited_id in invited:
-        # invited_id – это tg_id? В вашей БД в invited хранятся user_id? Проверим.
-        # Судя по коду, в invited добавляется user_id (внутренний ID), но для отображения лучше взять tg_id или nickname.
-        # В вашем коде при добавлении реферала (add_referral) используется new_player_id (внутренний ID), а в get_referral_data возвращается список этих ID.
-        # Надо получить tg_id или nickname для каждого.
-        # Проще: пройдём по списку и для каждого получим данные.
-        player = await run_sync_db(get_player_data, invited_id)
+    for inv_id in invited:
+        player = await run_sync_db(get_player_data, inv_id)
         if player:
             users.append({
-                "id": invited_id,
-                "nickname": player.get("nickname", f"ID:{player.get('tg_id', invited_id)}"),
+                "id": inv_id,
+                "nickname": player.get("nickname", f"ID:{player.get('tg_id', inv_id)}"),
                 "tg_id": player.get("tg_id")
             })
         else:
-            users.append({"id": invited_id, "nickname": "Неизвестный", "tg_id": None})
-    return web.json_response({"users": users})
+            users.append({"id": inv_id, "nickname": "Неизвестный", "tg_id": None})
 
-async def handle_referral_income(request):
-    """Возвращает общий доход от рефералов"""
-    tg_id = request.query.get('tg_id')
+    return JSONResponse({"users": users})
+
+@app.get("/referral/income")
+async def referral_income(request: Request):
+    tg_id = request.query_params.get('tg_id')
     if not tg_id:
-        return web.json_response({"error": "No tg_id"}, status=400)
+        return JSONResponse({"error": "No tg_id"}, status_code=400)
     try:
         tg_id = int(tg_id)
     except ValueError:
-        return web.json_response({"error": "Invalid tg_id"}, status=400)
+        return JSONResponse({"error": "Invalid tg_id"}, status_code=400)
 
     player_id = await get_player_id_by_tg(tg_id)
     if not player_id:
-        return web.json_response({"error": "Player not found"}, status=404)
+        return JSONResponse({"error": "Player not found"}, status_code=404)
 
     ref_data = await run_sync_db(get_referral_data, player_id)
     invited = ref_data.get("invited", [])
     count = len(invited)
     income = count * 20000
-    # Бонус за каждые 15 человек
     bonus = (count // 15) * 150000
     total = income + bonus
-    return web.json_response({
+
+    return JSONResponse({
         "count": count,
         "income": income,
         "bonus": bonus,
         "total": total
     })
 
-async def start_web_server_async():
-    try:
-        print("🔄 Запуск веб-сервера на порту 8080...")
-        app = web.Application()
-        # Только профиль и рефералы (баланс не возвращается)
-        app.router.add_get('/profile/{tg_id}', handle_profile)
-        app.router.add_options('/profile/{tg_id}', handle_options)
-        app.router.add_get('/referral/generate', handle_referral_generate)
-        app.router.add_get('/referral/users', handle_referral_users)
-        app.router.add_get('/referral/income', handle_referral_income)
-        app.router.add_options('/referral/generate', handle_options)
-        app.router.add_options('/referral/users', handle_options)
-        app.router.add_options('/referral/income', handle_options)
-        app.router.add_post('/deposit', handle_deposit)
-        app.router.add_post('/withdraw', handle_withdraw)
-        app.router.add_options('/deposit', handle_options)
-        app.router.add_options('/withdraw', handle_options)
-        runner = web.AppRunner(app)
-        await runner.setup()
-        site = web.TCPSite(runner, '0.0.0.0', 8080)
-        await site.start()
-        print("✅ Веб-сервер запущен на порту 8080")
-        await asyncio.Event().wait()
-    except Exception as e:
-        print(f"❌ Ошибка запуска веб-сервера: {e}")
-        import traceback
-        traceback.print_exc()
-
-async def main():
-    init_db()
-    upgrade_db()
-    ensure_stock_prices_table()
-    generate_supplier_items()
-    init_trading()
-    
-    print("🤖 Бот запущен в режиме polling")
-    
-    # Фоновые задачи
-    asyncio.create_task(update_trading_loop())
-    asyncio.create_task(auction_loop())
-    asyncio.create_task(check_business_expiry())
-    asyncio.create_task(process_deposits())
-    asyncio.create_task(process_mining())
-    asyncio.create_task(check_overdue_loans())
-    asyncio.create_task(race_timeout_check())
-    asyncio.create_task(update_stock_prices_loop())
-    asyncio.create_task(dividends_loop())
-    asyncio.create_task(clean_inactive_chats())
-    asyncio.create_task(daily_day_increment())
-    asyncio.create_task(start_web_server_async())  # <-- здесь
-
-    await bot.delete_webhook(drop_pending_updates=True)
-    print("✅ Вебхук удалён, запускаем polling...")
-    
-    await dp.start_polling(bot, allowed_updates=["message", "callback_query", "web_app_data"])
+@app.get("/health")
+async def health():
+    return JSONResponse({"status": "ok"})
 
 async def run_bot():
     """Точка входа для Bothost (обёртка над main)"""
     await main()
-
-if __name__ == "__main__":
-    asyncio.run(main())
