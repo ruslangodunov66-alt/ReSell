@@ -1,1 +1,502 @@
+<!DOCTYPE html>
+<html lang="ru" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>База отдыха «Тихий Дон» — Официальное бронирование</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts: Playfair Display & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+        /* Плавные переходы */
+        .glass-panel {
+            background: rgba(10, 42, 26, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(52, 211, 153, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-[#051610] text-emerald-50 h-full flex flex-col selection:bg-amber-500 selection:text-black">
 
+    <!-- Верхняя навигация / Шапка -->
+    <header class="bg-[#072115]/90 border-b border-emerald-900/60 sticky top-0 z-40 backdrop-blur-md px-4 py-3 shadow-xl">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 flex items-center justify-center shadow-lg shadow-amber-900/20">
+                    <i data-lucide="trees" class="w-6 h-6 text-black"></i>
+                </div>
+                <div>
+                    <h1 class="font-serif font-bold text-lg text-emerald-100 tracking-wide">Тихий Дон</h1>
+                    <p class="text-[10px] text-amber-400/90 tracking-widest uppercase font-semibold">Усадьба у реки</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button onclick="switchTab('map')" id="navMapBtn" class="px-3 py-1.5 rounded-lg text-xs font-medium transition bg-emerald-800/80 text-amber-300 border border-emerald-700/60 flex items-center gap-1.5">
+                    <i data-lucide="map" class="w-3.5 h-3.5"></i> Карта
+                </button>
+                <button onclick="switchTab('info')" id="navInfoBtn" class="px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-300 hover:bg-emerald-900/50 flex items-center gap-1.5">
+                    <i data-lucide="info" class="w-3.5 h-3.5"></i> О базе
+                </button>
+                <button onclick="openAdminLoginModal()" class="p-1.5 rounded-lg bg-emerald-900/60 hover:bg-emerald-800 text-emerald-300 border border-emerald-800 transition" title="Панель администратора">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-amber-400"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Основное содержимое -->
+    <main class="flex-1 overflow-y-auto p-4 max-w-5xl mx-auto w-full space-y-6 pb-20">
+
+        <!-- Вкладка КАДРА / КАРТА -->
+        <div id="tabMap" class="space-y-6 animate-in fade-in duration-300">
+            
+            <!-- Баннер-приветствие -->
+            <div class="relative rounded-3xl overflow-hidden border border-emerald-800/80 shadow-2xl bg-gradient-to-r from-emerald-950 via-emerald-900 to-[#072115] p-6 sm:p-8">
+                <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
+                    <i data-lucide="compass" class="w-64 h-64 text-emerald-300"></i>
+                </div>
+                <div class="relative z-10 max-w-xl space-y-3">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span> Сезон 2026 открыт
+                    </span>
+                    <h2 class="font-serif text-2xl sm:text-3xl font-bold text-white leading-tight">Отдохните душой на великой реке</h2>
+                    <p class="text-xs sm:text-sm text-emerald-200/80 leading-relaxed">
+                        Выберите уютный домик на интерактивной карте в реальном времени. Зеленая зона, чистейший воздух, рыбалка и баня ждут вас.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Статистика в реальном времени -->
+            <div class="grid grid-cols-3 gap-3">
+                <div class="glass-panel p-3.5 rounded-2xl flex flex-col items-center justify-center text-center">
+                    <span class="text-emerald-400 font-bold text-lg sm:text-2xl font-serif" id="statFree">0</span>
+                    <span class="text-[11px] text-emerald-300/70 uppercase tracking-wider mt-0.5">Свободно</span>
+                </div>
+                <div class="glass-panel p-3.5 rounded-2xl flex flex-col items-center justify-center text-center border-amber-500/30">
+                    <span class="text-amber-400 font-bold text-lg sm:text-2xl font-serif" id="statBooked">0</span>
+                    <span class="text-[11px] text-amber-300/70 uppercase tracking-wider mt-0.5">Бронь</span>
+                </div>
+                <div class="glass-panel p-3.5 rounded-2xl flex flex-col items-center justify-center text-center border-rose-500/30">
+                    <span class="text-rose-400 font-bold text-lg sm:text-2xl font-serif" id="statBusy">0</span>
+                    <span class="text-[11px] text-rose-300/70 uppercase tracking-wider mt-0.5">Занято</span>
+                </div>
+            </div>
+
+            <!-- Блок фильтров -->
+            <div class="flex items-center justify-between bg-emerald-950/60 p-3 rounded-xl border border-emerald-900">
+                <div class="flex items-center gap-2 text-xs text-emerald-300">
+                    <i data-lucide="filter" class="w-4 h-4 text-amber-400"></i>
+                    <span>Фильтр:</span>
+                </div>
+                <div class="flex gap-1.5 overflow-x-auto">
+                    <button onclick="setFilter('all')" id="filterAll" class="px-3 py-1 rounded-lg text-xs bg-emerald-800 text-white transition">Все</button>
+                    <button onclick="setFilter('free')" id="filterFree" class="px-3 py-1 rounded-lg text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 hover:bg-emerald-900 transition">Свободные</button>
+                    <button onclick="setFilter('vip')" id="filterVip" class="px-3 py-1 rounded-lg text-xs bg-emerald-950 text-amber-400 border border-emerald-800 hover:bg-emerald-900 transition">VIP / Коттеджи</button>
+                </div>
+            </div>
+
+            <!-- Интерактивная карта - Сетка домиков -->
+            <div class="glass-panel p-4 sm:p-6 rounded-3xl relative">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="map-pin" class="w-5 h-5 text-amber-400"></i>
+                        <h3 class="font-serif font-bold text-base text-emerald-100">Схема территории базы</h3>
+                    </div>
+                    <span class="text-[11px] text-emerald-400 bg-emerald-900/60 px-2.5 py-1 rounded-full border border-emerald-800 flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Live статус
+                    </span>
+                </div>
+
+                <div id="housesGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <!-- Домики рендерятся через JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка О БАЗЕ -->
+        <div id="tabInfo" class="space-y-6 hidden animate-in fade-in duration-300">
+            <div class="glass-panel p-6 rounded-3xl space-y-4">
+                <h3 class="font-serif text-xl font-bold text-amber-300">О базе отдыха «Тихий Дон»</h3>
+                <p class="text-xs sm:text-sm text-emerald-200/80 leading-relaxed">
+                    Наша база расположена в живописном экологически чистом районе на берегу Дона. К вашим услугам комфортабельные деревянные срубы, оборудованные всем необходимым для семейного отдыха и рыбалки.
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <div class="bg-emerald-950/60 p-3.5 rounded-xl border border-emerald-900 flex items-start gap-3">
+                        <i data-lucide="wifi" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+                        <div>
+                            <h4 class="font-semibold text-xs text-emerald-100">Wi-Fi на территории</h4>
+                            <p class="text-[11px] text-emerald-400/80">Вы всегда на связи даже на природе.</p>
+                        </div>
+                    </div>
+                    <div class="bg-emerald-950/60 p-3.5 rounded-xl border border-emerald-900 flex items-start gap-3">
+                        <i data-lucide="Flame" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+                        <div>
+                            <h4 class="font-semibold text-xs text-emerald-100">Мангальные зоны</h4>
+                            <p class="text-[11px] text-emerald-400/80">Беседки и мангалы у каждого домика бесплатно.</p>
+                        </div>
+                    </div>
+                    <div class="bg-emerald-950/60 p-3.5 rounded-xl border border-emerald-900 flex items-start gap-3">
+                        <i data-lucide="anchor" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+                        <div>
+                            <h4 class="font-semibold text-xs text-emerald-100">Прокат лодок</h4>
+                            <p class="text-[11px] text-emerald-400/80">Аренда весельных и моторных лодок для рыбалки.</p>
+                        </div>
+                    </div>
+                    <div class="bg-emerald-950/60 p-3.5 rounded-xl border border-emerald-900 flex items-start gap-3">
+                        <i data-lucide="shield" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5"></i>
+                        <div>
+                            <h4 class="font-semibold text-xs text-emerald-100">Охраняемая парковка</h4>
+                            <p class="text-[11px] text-emerald-400/80">Ваш автомобиль под надежным присмотром.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 rounded-3xl space-y-3">
+                <h3 class="font-serif text-lg font-bold text-emerald-100">Контакты и адрес</h3>
+                <div class="space-y-2 text-xs text-emerald-300">
+                    <p class="flex items-center gap-2"><i data-lucide="map-pin" class="w-4 h-4 text-amber-400"></i> Ростовская область, живописный берег Дона</p>
+                    <p class="flex items-center gap-2"><i data-lucide="phone" class="w-4 h-4 text-amber-400"></i> +7 (900) 555-35-35 (Администратор)</p>
+                    <p class="flex items-center gap-2"><i data-lucide="clock" class="w-4 h-4 text-amber-400"></i> Заезд с 14:00, выезд до 12:00</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Модальное окно домика / бронирования -->
+    <div id="houseModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden">
+        <div class="glass-panel border-emerald-700/60 w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom duration-300">
+            <div class="flex justify-between items-start">
+                <div>
+                    <span id="modalCategoryBadge" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md"></span>
+                    <h3 id="modalTitle" class="font-serif text-xl font-bold text-white mt-1.5">Домик</h3>
+                </div>
+                <button onclick="closeModal()" class="p-2 rounded-xl bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Изображение симуляция -->
+            <div id="modalImageContainer" class="w-full h-36 rounded-2xl bg-gradient-to-tr from-emerald-950 to-emerald-800 flex items-center justify-center relative overflow-hidden border border-emerald-800">
+                <i data-lucide="home" class="w-16 h-16 text-emerald-600/40"></i>
+                <div class="absolute bottom-2 right-2 bg-black/60 backdrop-blur px-2.5 py-1 rounded-lg text-xs font-semibold text-amber-400" id="modalPrice">
+                    0 ₽ / сутки
+                </div>
+            </div>
+
+            <p id="modalDesc" class="text-xs text-emerald-300 leading-relaxed"></p>
+
+            <!-- Блок бронирования (для клиентов) -->
+            <div id="clientBookingSection" class="space-y-3 pt-2">
+                <div class="border-t border-emerald-800/60 pt-3">
+                    <h4 class="font-semibold text-xs text-emerald-200 mb-2 flex items-center gap-1.5">
+                        <i data-lucide="calendar-check" class="w-4 h-4 text-amber-400"></i> Забронировать этот объект
+                    </h4>
+                </div>
+                <div>
+                    <label class="block text-[11px] text-emerald-400 mb-1">Ваше имя</label>
+                    <input type="text" id="clientName" placeholder="Иван" class="w-full bg-emerald-950 border border-emerald-800 rounded-xl px-3 py-2 text-xs text-emerald-100 focus:outline-none focus:border-amber-500">
+                </div>
+                <div>
+                    <label class="block text-[11px] text-emerald-400 mb-1">Телефон для связи</label>
+                    <input type="tel" id="clientPhone" placeholder="+7 (999) 000-00-00" class="w-full bg-emerald-950 border border-emerald-800 rounded-xl px-3 py-2 text-xs text-emerald-100 focus:outline-none focus:border-amber-500">
+                </div>
+                <button onclick="submitBooking()" class="w-full bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-bold py-3 rounded-xl text-xs transition shadow-lg shadow-amber-900/30">
+                    Подтвердить бронирование
+                </button>
+            </div>
+
+            <!-- Блок управления для администратора (скрыт по умолчанию) -->
+            <div id="adminControlSection" class="hidden space-y-3 pt-3 border-t border-emerald-800">
+                <h4 class="font-semibold text-xs text-amber-400 flex items-center gap-1">
+                    <i data-lucide="shield" class="w-3.5 h-3.5"></i> Режим администратора
+                </h4>
+                <div>
+                    <label class="block text-[11px] text-emerald-400 mb-1">Изменить статус домика</label>
+                    <select id="adminStatusSelect" class="w-full bg-emerald-950 border border-emerald-700 rounded-xl px-3 py-2 text-xs text-emerald-100 focus:outline-none focus:border-amber-500">
+                        <option value="free">Свободен</option>
+                        <option value="booked">Забронирован</option>
+                        <option value="busy">Занят (Проживают)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[11px] text-emerald-400 mb-1">Информация о госте / примечание</label>
+                    <input type="text" id="adminGuestInput" placeholder="Имя гостя или детали" class="w-full bg-emerald-950 border border-emerald-700 rounded-xl px-3 py-2 text-xs text-emerald-100 focus:outline-none focus:border-amber-500">
+                </div>
+                <button onclick="saveAdminHouseChanges()" class="w-full bg-emerald-700 hover:bg-emerald-600 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow">
+                    Сохранить изменения
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно Входа в Админку -->
+    <div id="adminLoginModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="glass-panel border-emerald-700/60 w-full max-w-xs rounded-3xl p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center">
+                <h3 class="font-serif text-lg font-bold text-amber-300">Вход для админа</h3>
+                <button onclick="closeAdminLoginModal()" class="p-1.5 rounded-lg bg-emerald-900 text-emerald-300">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div>
+                <label class="block text-[11px] text-emerald-400 mb-1">Пароль администратора</label>
+                <input type="password" id="adminPinInput" placeholder="Введите пин (1234)" class="w-full bg-emerald-950 border border-emerald-800 rounded-xl px-3 py-2 text-xs text-emerald-100 focus:outline-none focus:border-amber-500">
+            </div>
+            <button onclick="verifyAdminPin()" class="w-full bg-amber-600 hover:bg-amber-500 text-black font-bold py-2.5 rounded-xl text-xs transition">
+                Войти в систему
+            </button>
+        </div>
+    </div>
+
+    <!-- Всплывающее уведомление (Тост) -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-emerald-900 border border-emerald-600 text-white px-4 py-2.5 rounded-2xl shadow-2xl text-xs flex items-center gap-2 hidden transition-all z-50">
+        <i data-lucide="check-circle" class="w-4 h-4 text-amber-400"></i>
+        <span id="toastText">Готово!</span>
+    </div>
+
+    <!-- Скрипты приложения -->
+    <script>
+        // Инициализация Telegram WebApp если доступно
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.expand();
+        }
+
+        // Данные домиков базы «Тихий Дон»
+        let houses = [
+            { id: 1, name: "Домик №1 «Рыбацкий с причалом»", category: "standard", price: "4 500 ₽", desc: "Уютный бревенчатый домик прямо у воды. Идеально подходит для любителей утренней рыбалки. Есть мангал и беседка.", status: "free", guest: "" },
+            { id: 2, name: "Домик №2 «Лесная опушка»", category: "standard", price: "5 000 ₽", desc: "Домик в тени сосен с просторной верандой. Внутри двуспальная кровать, чайник, холодильник и кондиционер.", status: "booked", guest: "Алексей М. (+7 900 ...)" },
+            { id: 3, name: "Коттедж №3 «Донской VIP»", category: "vip", price: "8 500 ₽", desc: "Двухуровневый коттедж повышенной комфортности с собственной русской баней и панорамным видом на реку.", status: "busy", guest: "Иван Сергеевич" },
+            { id: 4, name: "Домик №4 «Тишь»", category: "standard", price: "4 000 ₽", desc: "Небольшой тихий домик для уединенного отдыха пары. Все удобства внутри.", status: "free", guest: "" },
+            { id: 5, name: "Домик №5 «Уютный»", category: "standard", price: "4 800 ₽", desc: "Современный дизайн, теплый пол, мангальная зона в шаге от крыльца.", status: "free", guest: "" },
+            { id: 6, name: "Коттедж №6 «Атаманский»", category: "vip", price: "11 000 ₽", desc: "Роскошный дом на большую компанию до 8 человек с камином, большой террасой и выходом к воде.", status: "booked", guest: "Дмитрий В." }
+        ];
+
+        let currentFilter = 'all';
+        let isAdmin = false;
+        let selectedHouseId = null;
+
+        // Переключение вкладок
+        function switchTab(tabName) {
+            const mapTab = document.getElementById('tabMap');
+            const infoTab = document.getElementById('tabInfo');
+            const mapBtn = document.getElementById('navMapBtn');
+            const infoBtn = document.getElementById('navInfoBtn');
+
+            if (tabName === 'map') {
+                mapTab.classList.remove('hidden');
+                infoTab.classList.add('hidden');
+                mapBtn.className = "px-3 py-1.5 rounded-lg text-xs font-medium transition bg-emerald-800/80 text-amber-300 border border-emerald-700/60 flex items-center gap-1.5";
+                infoBtn.className = "px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-300 hover:bg-emerald-900/50 flex items-center gap-1.5";
+            } else {
+                mapTab.classList.add('hidden');
+                infoTab.classList.remove('hidden');
+                infoBtn.className = "px-3 py-1.5 rounded-lg text-xs font-medium transition bg-emerald-800/80 text-amber-300 border border-emerald-700/60 flex items-center gap-1.5";
+                mapBtn.className = "px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-300 hover:bg-emerald-900/50 flex items-center gap-1.5";
+            }
+        }
+
+        // Фильтрация
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.getElementById('filterAll').className = filter === 'all' ? "px-3 py-1 rounded-lg text-xs bg-emerald-800 text-white transition" : "px-3 py-1 rounded-lg text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 hover:bg-emerald-900 transition";
+            document.getElementById('filterFree').className = filter === 'free' ? "px-3 py-1 rounded-lg text-xs bg-emerald-800 text-white transition" : "px-3 py-1 rounded-lg text-xs bg-emerald-950 text-emerald-400 border border-emerald-800 hover:bg-emerald-900 transition";
+            document.getElementById('filterVip').className = filter === 'vip' ? "px-3 py-1 rounded-lg text-xs bg-emerald-800 text-white transition" : "px-3 py-1 rounded-lg text-xs bg-emerald-950 text-amber-400 border border-emerald-800 hover:bg-emerald-900 transition";
+            renderHouses();
+        }
+
+        // Рендеринг карточек домиков
+        function renderHouses() {
+            const grid = document.getElementById('housesGrid');
+            grid.innerHTML = '';
+
+            let freeCount = 0, bookedCount = 0, busyCount = 0;
+
+            houses.forEach(h => {
+                if (h.status === 'free') freeCount++;
+                else if (h.status === 'booked') bookedCount++;
+                else if (h.status === 'busy') busyCount++;
+
+                // Фильтрация отображения
+                if (currentFilter === 'free' && h.status !== 'free') return;
+                if (currentFilter === 'vip' && h.category !== 'vip') return;
+
+                let badgeColor = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+                let dotColor = 'bg-emerald-400';
+                let statusName = 'Свободен';
+
+                if (h.status === 'booked') {
+                    badgeColor = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+                    dotColor = 'bg-amber-400';
+                    statusName = 'Забронирован';
+                } else if (h.status === 'busy') {
+                    badgeColor = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+                    dotColor = 'bg-rose-500';
+                    statusName = 'Занят';
+                }
+
+                const card = document.createElement('div');
+                card.className = "glass-panel p-4 rounded-2xl flex flex-col justify-between hover:border-emerald-600 transition cursor-pointer group shadow-lg";
+                card.onclick = () => openModal(h.id);
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded border ${badgeColor} flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full ${dotColor}"></span> ${statusName}
+                            </span>
+                            <span class="text-xs font-bold text-amber-400">${h.price}</span>
+                        </div>
+                        <h4 class="font-serif font-bold text-sm text-emerald-100 group-hover:text-amber-300 transition mt-1">${h.name}</h4>
+                        <p class="text-[11px] text-emerald-300/70 mt-1.5 line-clamp-2">${h.desc}</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-emerald-900/80 flex justify-between items-center text-xs">
+                        <span class="text-emerald-400/80 text-[11px]">${h.category === 'vip' ? '⭐ VIP Коттедж' : '🏡 Стандарт'}</span>
+                        <span class="text-amber-400 group-hover:translate-x-1 transition flex items-center gap-1 text-[11px]">Подробнее &rarr;</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            document.getElementById('statFree').innerText = freeCount;
+            document.getElementById('statBooked').innerText = bookedCount;
+            document.getElementById('statBusy').innerText = busyCount;
+
+            lucide.createIcons();
+        }
+
+        // Открытие модального окна домика
+        function openModal(id) {
+            selectedHouseId = id;
+            const h = houses.find(x => x.id === id);
+            if (!h) return;
+
+            document.getElementById('modalTitle').innerText = h.name;
+            document.getElementById('modalDesc').innerText = h.desc;
+            document.getElementById('modalPrice').innerText = h.price + ' / сутки';
+
+            const badge = document.getElementById('modalCategoryBadge');
+            if (h.status === 'free') {
+                badge.className = "text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
+                badge.innerText = "Свободен для брони";
+            } else if (h.status === 'booked') {
+                badge.className = "text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40";
+                badge.innerText = "Забронировано";
+            } else {
+                badge.className = "text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40";
+                badge.innerText = "Занят в данный момент";
+            }
+
+            // Настройка панели администратора внутри модалки
+            document.getElementById('adminStatusSelect').value = h.status;
+            document.getElementById('adminGuestInput').value = h.guest || '';
+
+            if (isAdmin) {
+                document.getElementById('adminControlSection').classList.remove('hidden');
+                document.getElementById('clientBookingSection').classList.add('hidden');
+            } else {
+                document.getElementById('adminControlSection').classList.add('hidden');
+                if (h.status === 'free') {
+                    document.getElementById('clientBookingSection').classList.remove('hidden');
+                } else {
+                    document.getElementById('clientBookingSection').classList.add('hidden');
+                }
+            }
+
+            document.getElementById('houseModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('houseModal').classList.add('hidden');
+        }
+
+        // Оформление брони клиентом
+        function submitBooking() {
+            const name = document.getElementById('clientName').value.trim();
+            const phone = document.getElementById('clientPhone').value.trim();
+
+            if (!name || !phone) {
+                showToast("Пожалуйста, заполните имя и телефон!");
+                return;
+            }
+
+            const h = houses.find(x => x.id === selectedHouseId);
+            if (h) {
+                h.status = 'booked';
+                h.guest = `${name} (${phone})`;
+                renderHouses();
+                closeModal();
+                showToast("Бронь успешно оформлена! Ждем вас в «Тихом Доне».");
+            }
+        }
+
+        // Сохранение изменений админом
+        function saveAdminHouseChanges() {
+            const newStatus = document.getElementById('adminStatusSelect').value;
+            const newGuest = document.getElementById('adminGuestInput').value.trim();
+
+            const h = houses.find(x => x.id === selectedHouseId);
+            if (h) {
+                h.status = newStatus;
+                h.guest = newGuest;
+                renderHouses();
+                closeModal();
+                showToast("Статус домика успешно обновлен администратором!");
+            }
+        }
+
+        // Управление входом в админку
+        function openAdminLoginModal() {
+            if (isAdmin) {
+                // Если уже админ — выходим
+                isAdmin = false;
+                showToast("Режим администратора отключен");
+                renderHouses();
+                return;
+            }
+            document.getElementById('adminLoginModal').classList.remove('hidden');
+        }
+
+        function closeAdminLoginModal() {
+            document.getElementById('adminLoginModal').classList.add('hidden');
+        }
+
+        function verifyAdminPin() {
+            const pin = document.getElementById('adminPinInput').value;
+            if (pin === "1234") {
+                isAdmin = true;
+                closeAdminLoginModal();
+                showToast("Вход выполнен! Режим администратора активен.");
+                renderHouses();
+            } else {
+                showToast("Неверный пин-код! Подсказка: 1234");
+            }
+        }
+
+        // Тосты
+        function showToast(text) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastText').innerText = text;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3500);
+        }
+
+        // Первый запуск
+        window.onload = () => {
+            renderHouses();
+            lucide.createIcons();
+        };
+    </script>
+</body>
+</html>
