@@ -19,7 +19,7 @@ ADMIN_LOGIN=os.getenv("ADMIN_LOGIN","admin")
 ADMIN_PASSWORD=os.getenv("ADMIN_PASSWORD","change-me-now")
 
 app=FastAPI(title="Broni API")
-PUBLIC_API_BASE=os.getenv('PUBLIC_API_BASE','https://tihidon.bothost.tech').rstrip('/')
+PUBLIC_API_BASE=os.getenv('PUBLIC_API_BASE','https://tihiiidon.bothost.tech').rstrip('/')
 FRONTEND_ORIGINS=[x.strip().rstrip('/') for x in os.getenv('FRONTEND_ORIGINS','').split(',') if x.strip()]
 if PUBLIC_API_BASE not in FRONTEND_ORIGINS:
     FRONTEND_ORIGINS.append(PUBLIC_API_BASE)
@@ -77,7 +77,12 @@ class Report(BaseModel): booking_id:Optional[int]=None; house_id:Optional[int]=N
 class Theme(BaseModel): theme:str
 
 @app.get("/",response_class=HTMLResponse)
-async def index(): return HTMLResponse((BASE/"broni.html").read_text(encoding="utf-8"))
+async def index():
+    for name in ("broni.html", "broni(2).html", "broni(1).html"):
+        p=BASE/name
+        if p.exists():
+            return HTMLResponse(p.read_text(encoding="utf-8"))
+    raise HTTPException(500,"Файл интерфейса broni.html не найден")
 @app.get("/uploads/{name}")
 async def upload(name:str):
     p=UPLOADS/Path(name).name

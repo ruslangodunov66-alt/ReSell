@@ -19,10 +19,10 @@
 <script>
 const S={user:null,houses:[],fav:new Set(),filter:'',house:null};
 const $=x=>document.querySelector(x), esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),fmt=n=>new Intl.NumberFormat('ru-RU').format(n||0);
-const DEFAULT_API_BASE='https://tihiiidon.bothost.tech';const API_BASE=(()=>{const q=new URLSearchParams(location.search).get('api');return (q||DEFAULT_API_BASE).replace(/\/$/,'')})();try{localStorage.setItem('broni_api_base',API_BASE)}catch(_){}
+const DEFAULT_API_BASE='https://tihiiidon.bothost.tech';const API_BASE=(()=>{const q=new URLSearchParams(location.search).get('api');const same=location.protocol.startsWith('http')?location.origin:'';return (q||((same && /(^|\.)tihiiidon\.bothost\.tech$/i.test(location.hostname))?same:DEFAULT_API_BASE)).replace(/\/$/,'')})();try{localStorage.setItem('broni_api_base',API_BASE)}catch(_){}
 async function api(u,o={}){const url=u.startsWith('http')?u:API_BASE+u;let r;try{r=await fetch(url,{credentials:'include',...o})}catch(err){throw Error('Не удалось соединиться с сервером. Проверьте адрес API и запущен ли bot.py.')}let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.detail||d.message||('Ошибка запроса: HTTP '+r.status));return d}
 
-function toast(t){let x=$('#toast');x.textContent=t;x.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>x.classList.remove('on'),2400)}
+function toast(t){let x=$('#toast');if(!x)return;x.textContent=t;x.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>x.classList.remove('on'),2400)}
 function go(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('on'));$('#'+id).classList.add('on');document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('on',x.dataset.s===id));if(id==='houses')loadHouses();if(id==='bookings')loadBookings();if(id==='favorites')loadFav();if(id==='profile')renderProfile();if(id==='admin')loadAdmin();scrollTo(0,0)}
 function openM(x){$('#sheet').innerHTML=x;$('#modal').classList.add('on')}function closeModal(){$('#modal').classList.remove('on')}
 function img(h){return h?.images?.[0]||'https://images.unsplash.com/photo-1449157291145-7efd050a4d0e?auto=format&fit=crop&w=1200&q=80'}
