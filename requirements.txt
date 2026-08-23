@@ -1,0 +1,4 @@
+astapi
+uvicorn
+starlette
+itsdangerous
