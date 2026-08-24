@@ -3,15 +3,95 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600&display=swap');
 :root{--bg:#f7f7f5;--card:#fff;--txt:#1d2623;--muted:#7c8581;--line:#e7e9e6;--green:#294940;--soft:#edf2ef;--danger:#b34b43}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,Arial,sans-serif}.app{max-width:1160px;margin:auto;padding:18px 18px 105px}.top{height:55px;display:flex;align-items:center;justify-content:space-between}.brand{text-align:center}.brand b{font:600 21px "Playfair Display",serif}.brand small{display:block;color:var(--muted);font-size:9px}.ico{border:0;background:transparent;font-size:22px;cursor:pointer}.screen{display:none}.screen.on{display:block}.hero{height:520px;border-radius:30px;overflow:hidden;position:relative}.hero img{width:100%;height:100%;object-fit:cover}.hero:after{content:"";position:absolute;inset:45% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.75))}.heroText{position:absolute;z-index:2;bottom:30px;left:28px;color:#fff}.heroText h1{font:600 36px/1.05 "Playfair Display",serif;margin:0 0 10px}.heroText p{max-width:450px;font-size:13px;line-height:1.5}.btn{border:0;border-radius:15px;min-height:48px;padding:13px 17px;font-weight:600;cursor:pointer}.primary{background:var(--green);color:#fff}.ghost{background:var(--soft);color:var(--green)}.danger{background:#fff0ee;color:var(--danger)}.wide{width:100%}.head{display:flex;gap:10px;align-items:center;margin:8px 0 15px}.head h2{font:600 28px "Playfair Display",serif;margin:0}.grow{flex:1}.back{border:0;background:transparent;font-size:26px}.search{display:flex;gap:9px;padding:12px 14px;border-radius:15px;background:#f0f1ef;margin-bottom:10px}.search input{border:0;background:transparent;outline:0;width:100%}.chips{display:flex;gap:7px;overflow:auto;padding-bottom:12px}.chip{border:0;background:#fff;border-radius:18px;padding:10px 15px;white-space:nowrap}.chip.on{background:#202624;color:#fff}.list{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden}.pic{height:190px;position:relative;background:#dce4df}.pic img{width:100%;height:100%;object-fit:cover}.heart{position:absolute;right:9px;top:9px;border:0;background:#fff;width:38px;height:38px;border-radius:50%}.body{padding:14px}.facts{color:var(--muted);font-size:11px;line-height:1.7}.price{font-weight:700;margin-top:6px}.detailpic{height:410px;border-radius:26px;overflow:hidden;position:relative}.detailpic img{width:100%;height:100%;object-fit:cover}.detail h1{font:600 32px "Playfair Display",serif}.amen{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.amen div{text-align:center;font-size:10px;color:#555}.amen b{display:block;font-size:18px;margin-bottom:4px}.box,.profile{background:#fff;border:1px solid var(--line);border-radius:22px;padding:16px;margin-top:14px}.dates{display:grid;grid-template-columns:1fr 1fr;gap:9px}.field{border:1px solid var(--line);border-radius:14px;padding:10px 12px}.field label{font-size:9px;color:var(--muted);display:block;margin-bottom:4px}.field input,.field textarea,.field select{border:0;outline:0;width:100%;background:transparent}.total{display:flex;justify-content:space-between;padding:15px 0}.bottom{position:fixed;z-index:30;bottom:12px;left:50%;transform:translateX(-50%);width:min(680px,calc(100% - 24px));display:grid;grid-template-columns:repeat(4,1fr);background:rgba(255,255,255,.94);backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:22px;padding:7px;box-shadow:0 10px 35px #0001}.nav{border:0;background:transparent;color:var(--muted);border-radius:14px;padding:8px 2px;font-size:10px}.nav.on{background:var(--soft);color:var(--green);font-weight:700}.nav span{display:block;font-size:18px;margin-bottom:3px}.empty{text-align:center;color:var(--muted);padding:55px 20px}.modal{display:none;position:fixed;z-index:50;inset:0;background:#0007;align-items:flex-end}.modal.on{display:flex}.sheet{background:#fff;width:min(680px,100%);border-radius:28px 28px 0 0;padding:22px;max-height:92vh;overflow:auto}.close{float:right;border:0;background:#f0f1ef;width:38px;height:38px;border-radius:50%}.adminstats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.stat{background:var(--soft);border-radius:16px;padding:13px}.stat b{font-size:22px;display:block}.stat small{color:var(--muted)}.adminrow{display:grid;grid-template-columns:90px 1fr auto;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding:12px 0}.adminrow img{width:90px;height:70px;object-fit:cover;border-radius:12px}.toast{position:fixed;z-index:100;top:16px;left:50%;transform:translate(-50%,-20px);opacity:0;background:#202624;color:#fff;border-radius:14px;padding:11px 15px;transition:.2s}.toast.on{opacity:1;transform:translate(-50%,0)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,Arial,sans-serif}.app{max-width:1160px;margin:auto;padding:18px 18px 105px}.top{height:55px;display:flex;align-items:center;justify-content:space-between}.brand{text-align:center}.brand b{font:600 21px "Playfair Display",serif}.brand small{display:block;color:var(--muted);font-size:9px}.ico{border:0;background:transparent;font-size:22px;cursor:pointer}.screen{display:none}.screen.on{display:block}.hero{height:520px;border-radius:30px;overflow:hidden;position:relative}.hero img{width:100%;height:100%;object-fit:cover}.hero:after{content:"";position:absolute;inset:45% 0 0;background:linear-gradient(transparent,rgba(0,0,0,.75))}.heroText{position:absolute;z-index:2;bottom:30px;left:28px;color:#fff}.heroText h1{font:600 36px/1.05 "Playfair Display",serif;margin:0 0 10px}.heroText p{max-width:450px;font-size:13px;line-height:1.5}.btn{border:0;border-radius:15px;min-height:48px;padding:13px 17px;font-weight:600;cursor:pointer}.primary{background:var(--green);color:#fff}.ghost{background:var(--soft);color:var(--green)}.danger{background:#fff0ee;color:var(--danger)}.wide{width:100%}.light{background:#f4f6f5;color:var(--txt);border:1px solid var(--line)}.head{display:flex;gap:10px;align-items:center;margin:8px 0 15px}.head h2{font:600 28px "Playfair Display",serif;margin:0}.grow{flex:1}.back{border:0;background:transparent;font-size:26px}.search{display:flex;gap:9px;padding:12px 14px;border-radius:15px;background:#f0f1ef;margin-bottom:10px}.search input{border:0;background:transparent;outline:0;width:100%}.chips{display:flex;gap:7px;overflow:auto;padding-bottom:12px}.chip{border:0;background:#fff;border-radius:18px;padding:10px 15px;white-space:nowrap}.chip.on{background:#202624;color:#fff}.list{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.card{background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden}.pic{height:190px;position:relative;background:#dce4df}.pic img{width:100%;height:100%;object-fit:cover}.heart{position:absolute;right:9px;top:9px;border:0;background:#fff;width:38px;height:38px;border-radius:50%}.body{padding:14px}.facts{color:var(--muted);font-size:11px;line-height:1.7}.price{font-weight:700;margin-top:6px}.detailpic{height:410px;border-radius:26px;overflow:hidden;position:relative}.detailpic img{width:100%;height:100%;object-fit:cover}.detail h1{font:600 32px "Playfair Display",serif}.amen{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.amen div{text-align:center;font-size:10px;color:#555}.amen b{display:block;font-size:18px;margin-bottom:4px}.box,.profile{background:#fff;border:1px solid var(--line);border-radius:22px;padding:16px;margin-top:14px}.dates{display:grid;grid-template-columns:1fr 1fr;gap:9px}.field{border:1px solid var(--line);border-radius:14px;padding:10px 12px}.field label{font-size:9px;color:var(--muted);display:block;margin-bottom:4px}.field input,.field textarea,.field select{border:0;outline:0;width:100%;background:transparent}.total{display:flex;justify-content:space-between;padding:15px 0}.bottom{position:fixed;z-index:30;bottom:12px;left:50%;transform:translateX(-50%);width:min(680px,calc(100% - 24px));display:grid;grid-template-columns:repeat(4,1fr);background:rgba(255,255,255,.94);backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:22px;padding:7px;box-shadow:0 10px 35px #0001}.nav{border:0;background:transparent;color:var(--muted);border-radius:14px;padding:8px 2px;font-size:10px}.nav.on{background:var(--soft);color:var(--green);font-weight:700}.nav span{display:block;font-size:18px;margin-bottom:3px}.empty{text-align:center;color:var(--muted);padding:55px 20px}.modal{display:none;position:fixed;z-index:50;inset:0;background:#0007;align-items:flex-end}.modal.on{display:flex}.sheet{background:#fff;width:min(680px,100%);border-radius:28px 28px 0 0;padding:22px;max-height:92vh;overflow:auto}.close{float:right;border:0;background:#f0f1ef;width:38px;height:38px;border-radius:50%}.adminstats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.stat{background:var(--soft);border-radius:16px;padding:13px}.stat b{font-size:22px;display:block}.stat small{color:var(--muted)}.adminrow{display:grid;grid-template-columns:90px 1fr auto;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding:12px 0}.adminrow img{width:90px;height:70px;object-fit:cover;border-radius:12px}.toast{position:fixed;z-index:100;top:16px;left:50%;transform:translate(-50%,-20px);opacity:0;background:#202624;color:#fff;border-radius:14px;padding:11px 15px;transition:.2s}.toast.on{opacity:1;transform:translate(-50%,0)}
 @media(max-width:700px){.list{grid-template-columns:1fr}.hero{height:500px}.pic{height:220px}.detailpic{height:340px}.adminstats{grid-template-columns:1fr 1fr}.adminrow{grid-template-columns:72px 1fr}.adminrow .actions{grid-column:2}.adminrow img{width:72px;height:60px}}@media(min-width:900px){.bottom{position:static;transform:none;margin-top:20px}.app{padding-bottom:20px}.list{grid-template-columns:repeat(3,1fr)}}
+
+/* ===== ТИХИЙ ДОН — PROFESSIONAL UI OVERRIDES ===== */
+:root{
+ --bg:#f5f6f3;--card:#ffffff;--txt:#17201d;--muted:#78817d;
+ --line:#e2e7e3;--green:#244c40;--green2:#315f51;--soft:#edf3ef;
+ --danger:#a94c45;--shadow:0 18px 55px rgba(22,35,30,.09);
+}
+body{background:radial-gradient(circle at 50% -10%,#eef5f0 0,#f5f6f3 38%,#f5f6f3 100%);letter-spacing:-.01em}
+.app{max-width:1180px;padding:22px 20px 118px}
+.top{height:64px;margin-bottom:8px}
+.brand b{font-size:24px;letter-spacing:-.03em}
+.brand small{font-size:9px;letter-spacing:.18em;text-transform:uppercase}
+.ico{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.72);box-shadow:0 5px 20px #17201d0b;transition:.2s}
+.ico:hover{transform:translateY(-1px);background:#fff}
+.hero{height:590px;border-radius:34px;box-shadow:var(--shadow)}
+.hero img{transition:transform .8s ease}
+.hero:hover img{transform:scale(1.015)}
+.hero:after{background:linear-gradient(180deg,transparent 35%,rgba(9,18,15,.78) 100%)}
+.heroText{left:38px;bottom:38px;max-width:600px}
+.heroText h1{font-size:46px;line-height:1.02;letter-spacing:-.045em}
+.heroText p{font-size:14px;opacity:.92}
+.btn{min-height:50px;border-radius:16px;transition:transform .18s,box-shadow .18s,background .18s}
+.btn:hover{transform:translateY(-1px)}
+.primary{background:linear-gradient(135deg,var(--green),var(--green2));box-shadow:0 9px 22px rgba(36,76,64,.18)}
+.ghost{background:#eef3f0}
+.head{margin:14px 0 20px}
+.head h2{font-size:32px;letter-spacing:-.035em}
+.search{border:1px solid var(--line);background:#fff;box-shadow:0 8px 25px #17201d08;padding:14px 16px}
+.search input{font-size:14px}
+.chips{gap:8px}
+.chip{border:1px solid var(--line);box-shadow:0 3px 12px #17201d05}
+.chip.on{background:var(--green)}
+.list{gap:18px}
+.card{border:1px solid var(--line);border-radius:25px;box-shadow:0 9px 30px #17201d08;transition:transform .2s,box-shadow .2s}
+.card:hover{transform:translateY(-3px);box-shadow:0 18px 42px #17201d12}
+.pic{height:215px}
+.pic img,.detailpic img{background:#e9eeeb}
+.heart{box-shadow:0 5px 18px #17201d16;transition:.2s}
+.heart:hover{transform:scale(1.05)}
+.body{padding:17px}
+.body>b{font-size:15px}
+.facts{font-size:11px;line-height:1.8}
+.price{font-size:15px}
+.detailpic{height:520px;border-radius:30px;box-shadow:var(--shadow)}
+.detail h1{font-size:38px;letter-spacing:-.04em}
+.amen{gap:12px}
+.amen div{background:#fff;border:1px solid var(--line);border-radius:18px;padding:13px 8px}
+.amen b{color:var(--green)}
+.box,.profile{border-radius:24px;box-shadow:0 10px 34px #17201d08}
+.field{background:#fbfcfb;transition:.2s}
+.field:focus-within{border-color:#9bb8ad;box-shadow:0 0 0 4px #dceae4}
+.field input,.field textarea,.field select{font-size:14px}
+.total{font-size:15px}
+.total b{font-size:20px;color:var(--green)}
+.bottom{border-radius:25px;padding:8px;box-shadow:0 18px 50px rgba(22,35,30,.14)}
+.nav{padding:10px 4px;font-size:10px;transition:.18s}
+.nav.on{background:#e7f0eb}
+.nav span{font-size:19px}
+.modal{backdrop-filter:blur(7px)}
+.sheet{border-radius:30px 30px 0 0;box-shadow:0 -18px 55px #0002}
+.close{cursor:pointer}
+.stat{border:1px solid #dfe9e3;background:#f0f5f2}
+.adminrow{padding:15px 0}
+.toast{box-shadow:0 10px 30px #0003}
+.empty{font-size:14px}
+@media(max-width:700px){
+ .app{padding:14px 14px 112px}
+ .hero{height:510px;border-radius:28px}
+ .heroText{left:24px;bottom:26px}
+ .heroText h1{font-size:35px}
+ .pic{height:225px}
+ .detailpic{height:360px;border-radius:25px}
+ .detail h1{font-size:30px}
+}
+@media(min-width:900px){
+ .hero{height:620px}
+ .list{grid-template-columns:repeat(3,1fr)}
+ .card .pic{height:225px}
+}
+
 </style></head><body><div class="app">
-<header class="top"><button class="ico" onclick="toast('Меню')">☰</button><div class="brand"><b>Тихий Дон</b><small>место для вашего отдыха</small></div><button class="ico" onclick="toast('Уведомлений пока нет')">♧</button></header>
+<header class="top"><button class="ico" onclick="toast('Меню')">☰</button><div class="brand"><b>Тихий Дон</b><small>место для вашего отдыха</small></div><span id="apiStatus" aria-label="Статус сервера" style="position:absolute;left:50%;transform:translateX(-50%);top:4px;width:7px;height:7px;border-radius:50%;background:#9aa39f;box-shadow:0 0 0 4px #fff8"></span><button class="ico" onclick="toast('Уведомлений пока нет')">♧</button></header>
 <section id="home" class="screen on"><div class="hero"><img id="hero"><div class="heroText"><h1>Отдых,<br>который вы заслужили</h1><p>Комфортные дома на берегу природы для вашего идеального отдыха.</p></div></div><button class="btn primary wide" style="margin-top:14px" onclick="go('houses')">▣ &nbsp; Забронировать</button></section>
-<section id="houses" class="screen"><div class="head"><button class="back" onclick="go('home')">←</button><h2>Наши дома</h2></div><div class="search">⌕ <input id="q" placeholder="Поиск дома" oninput="loadHouses()"></div><div class="chips"><button class="chip on" onclick="filter('',this)">Все</button><button class="chip" onclick="filter('Баня',this)">С баней</button><button class="chip" onclick="filter('Чан',this)">С чаном</button><button class="chip" onclick="filter('Терраса',this)">С террасой</button></div><div id="housesList" class="list"></div></section>
+<section id="houses" class="screen"><div class="head"><button class="back" onclick="go('home')">←</button><h2>Наши дома</h2></div><div class="search">⌕ <input id="q" placeholder="Поиск дома" oninput="loadHouses()"></div><div class="chips"><button class="chip on" onclick="filter('',this)">Все</button><button class="chip" onclick="filter('Баня',this)">С баней</button><button class="chip" onclick="filter('Чан',this)">С чаном</button><button class="chip" onclick="filter('Терраса',this)">С террасой</button></div><div id="housesList" class="list"><div class="empty">Загружаем дома…</div></div></section>
 <section id="detail" class="screen"><div id="detail"></div></section>
-<section id="bookings" class="screen"><div class="head"><h2>Бронирование</h2></div><div id="bookingList"></div></section>
-<section id="favorites" class="screen"><div class="head"><h2>Избранное</h2></div><div id="favList" class="list"></div></section>
+<section id="bookings" class="screen"><div class="head"><h2>Бронирование</h2></div><div id="bookingList"><div class="empty">Загружаем бронирования…</div></div></section>
+<section id="favorites" class="screen"><div class="head"><h2>Избранное</h2></div><div id="favList" class="list"><div class="empty">Загружаем избранное…</div></div></section>
 <section id="profile" class="screen"><div class="head"><h2>Профиль</h2></div><div id="profile"></div></section>
 <section id="admin" class="screen"><div class="head"><h2>Админ-панель</h2><div class="grow"></div><button class="btn ghost" onclick="logout()">Выйти</button></div><div id="admin"></div></section>
 <nav class="bottom"><button class="nav on" data-s="home" onclick="go('home')"><span>⌂</span>Главная</button><button class="nav" data-s="bookings" onclick="go('bookings')"><span>▣</span>Бронь</button><button class="nav" data-s="favorites" onclick="go('favorites')"><span>♡</span>Избранное</button><button class="nav" data-s="profile" onclick="go('profile')"><span>♙</span>Профиль</button></nav></div>
@@ -20,8 +100,7 @@
 const S={user:null,houses:[],fav:new Set(),filter:'',house:null};
 const $=x=>document.querySelector(x), esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),fmt=n=>new Intl.NumberFormat('ru-RU').format(n||0);
 const DEFAULT_API_BASE='https://tihiiidon.bothost.tech';const API_BASE=(()=>{const q=new URLSearchParams(location.search).get('api');const same=location.protocol.startsWith('http')?location.origin:'';return (q||((same && /(^|\.)tihiiidon\.bothost\.tech$/i.test(location.hostname))?same:DEFAULT_API_BASE)).replace(/\/$/,'')})();try{localStorage.setItem('broni_api_base',API_BASE)}catch(_){}
-async function api(u,o={}){const url=u.startsWith('http')?u:API_BASE+u;let r;try{r=await fetch(url,{credentials:'include',...o})}catch(err){throw Error('Не удалось соединиться с сервером. Проверьте адрес API и запущен ли bot.py.')}let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.detail||d.message||('Ошибка запроса: HTTP '+r.status));return d}
-
+async function api(u,o={}){const url=u.startsWith('http')?u:API_BASE+u;let lastErr;for(let attempt=0;attempt<3;attempt++){try{const r=await fetch(url,{credentials:'include',...o});let d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.detail||d.message||('Ошибка запроса: HTTP '+r.status));return d}catch(err){lastErr=err;if(attempt<2)await new Promise(x=>setTimeout(x,500*(attempt+1)))}}throw Error(lastErr?.message||'Не удалось соединиться с сервером.')}\n
 function toast(t){let x=$('#toast');if(!x)return;x.textContent=t;x.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>x.classList.remove('on'),2400)}
 function go(id){document.querySelectorAll('.screen').forEach(x=>x.classList.remove('on'));$('#'+id).classList.add('on');document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('on',x.dataset.s===id));if(id==='houses')loadHouses();if(id==='bookings')loadBookings();if(id==='favorites')loadFav();if(id==='profile')renderProfile();if(id==='admin')loadAdmin();scrollTo(0,0)}
 function openM(x){$('#sheet').innerHTML=x;$('#modal').classList.add('on')}function closeModal(){$('#modal').classList.remove('on')}
